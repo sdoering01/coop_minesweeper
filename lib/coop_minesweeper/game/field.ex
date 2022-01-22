@@ -94,7 +94,7 @@ defmodule CoopMinesweeper.Game.Field do
         {:error, :invalid_position}
 
       tiles[pos].mine? ->
-        field = reveal_mines(field)
+        field = reveal_mines(field, :lost)
         field = put_in(field.state, :lost)
         {:lost, field}
 
@@ -104,9 +104,10 @@ defmodule CoopMinesweeper.Game.Field do
         if won?(field) do
           field =
             if field.mines_left > 0,
-              do: reveal_mines(field),
+              do: reveal_mines(field, :won),
               else: field
 
+          field = put_in(field.mines_left, 0)
           field = put_in(field.state, :won)
           {:won, field}
         else
@@ -278,12 +279,14 @@ defmodule CoopMinesweeper.Game.Field do
   end
 
   # Reveals mines and identifies false marks.
-  @spec reveal_mines(field :: Field.t()) :: Field.t()
-  defp reveal_mines(%Field{tiles: tiles} = field) do
+  @spec reveal_mines(field :: Field.t(), mode :: :won | :lost) :: Field.t()
+  defp reveal_mines(%Field{tiles: tiles} = field, mode) do
+    hidden_substitution = if mode == :won, do: :mark, else: :mine
+
     Enum.reduce(Map.keys(tiles), field, fn pos, field ->
       cond do
         field.tiles[pos].mine? and field.tiles[pos].state == :hidden ->
-          update_in(field.tiles[pos], &Tile.set_state(&1, :mine))
+          update_in(field.tiles[pos], &Tile.set_state(&1, hidden_substitution))
 
         field.tiles[pos].state == :mark and not field.tiles[pos].mine? ->
           update_in(field.tiles[pos], &Tile.set_state(&1, :false_mark))
