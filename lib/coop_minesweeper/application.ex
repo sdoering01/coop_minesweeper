@@ -15,9 +15,10 @@ defmodule CoopMinesweeper.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: CoopMinesweeper.PubSub},
       # Start the Endpoint (http/https)
-      CoopMinesweeperWeb.Endpoint
+      CoopMinesweeperWeb.Endpoint,
       # Start a worker by calling: CoopMinesweeper.Worker.start_link(arg)
       # {CoopMinesweeper.Worker, arg}
+      CoopMinesweeper.Game.Supervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
