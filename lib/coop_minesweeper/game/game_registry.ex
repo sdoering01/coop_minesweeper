@@ -20,7 +20,7 @@ defmodule CoopMinesweeper.Game.GameRegistry do
 
     with {:ok, game_agent} <-
            DynamicSupervisor.start_child(
-             CoopMinesweeper.Game.GameSupervisor,
+             CoopMinesweeper.GameSupervisor,
              {CoopMinesweeper.Game.Game, size: size, mines: mines, game_id: game_id, name: name}
            ) do
       {:ok, {game_id, game_agent}}
