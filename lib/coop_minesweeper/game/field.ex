@@ -12,12 +12,12 @@ defmodule CoopMinesweeper.Game.Field do
   @max_size 20
   @min_mines 5
 
-  # TODO: Track game state in struct
   # TODO: Don't allow make_mark until mines are initialized
-  defstruct [:id, :size, :mines, :tiles, :mines_left, mines_initialized: false]
+  defstruct [:id, :size, :mines, :tiles, :mines_left, :state, mines_initialized: false]
 
   @type position() :: {non_neg_integer(), non_neg_integer()}
   @type tiles() :: %{position() => Tile.t()}
+  @type state() :: :running | :won | :lost
 
   @type t() :: %Field{
           id: String.t(),
@@ -25,16 +25,18 @@ defmodule CoopMinesweeper.Game.Field do
           mines: non_neg_integer(),
           tiles: tiles(),
           mines_left: non_neg_integer(),
-          mines_initialized: boolean()
+          mines_initialized: boolean(),
+          state: state()
         }
 
   @type on_new_error() :: {:error, :too_small | :too_large | :too_few_mines | :too_many_mines}
 
   @type on_make_turn() ::
-          {:ok | :won | :lost, Field.t()} | {:error, :out_of_field | :invalid_position}
+          {:ok | :won | :lost, Field.t()}
+          | {:error, :out_of_field | :invalid_position | :not_running}
 
   @type on_toggle_mark() ::
-          {:ok, Field.t()} | {:error, :out_of_field | :invalid_position}
+          {:ok, Field.t()} | {:error, :out_of_field | :invalid_position | :not_running}
 
   @doc """
   Generates a new field.
@@ -57,7 +59,8 @@ defmodule CoopMinesweeper.Game.Field do
       size: size,
       mines: mines,
       tiles: tiles,
-      mines_left: mines
+      mines_left: mines,
+      state: :running
     }
 
     {:ok, field}
@@ -71,6 +74,8 @@ defmodule CoopMinesweeper.Game.Field do
   bigger area.
   """
   @spec make_turn(field :: Field.t(), pos :: position()) :: on_make_turn()
+  def make_turn(%Field{state: state}, _pos) when state != :running, do: {:error, :not_running}
+
   def make_turn(%Field{size: size}, {row, col})
       when row < 0 or row >= size or col < 0 or col >= size,
       do: {:error, :out_of_field}
@@ -90,6 +95,7 @@ defmodule CoopMinesweeper.Game.Field do
 
       tiles[pos].mine? ->
         field = reveal_mines(field)
+        field = put_in(field.state, :lost)
         {:lost, field}
 
       true ->
@@ -101,6 +107,7 @@ defmodule CoopMinesweeper.Game.Field do
               do: reveal_mines(field),
               else: field
 
+          field = put_in(field.state, :won)
           {:won, field}
         else
           {:ok, field}
@@ -112,6 +119,8 @@ defmodule CoopMinesweeper.Game.Field do
   Marks a hidden tile or removes the mark of a marked tile.
   """
   @spec toggle_mark(field :: Field.t(), pos :: position()) :: on_toggle_mark()
+  def toggle_mark(%Field{state: state}, _pos) when state != :running, do: {:error, :not_running}
+
   def toggle_mark(%Field{size: size}, {row, col})
       when row < 0 or row >= size or col < 0 or col >= size,
       do: {:error, :out_of_field}
