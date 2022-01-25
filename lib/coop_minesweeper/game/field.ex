@@ -31,8 +31,7 @@ defmodule CoopMinesweeper.Game.Field do
   @type on_new_error() :: {:error, :too_small | :too_large | :too_few_mines | :too_many_mines}
 
   @type on_make_turn() ::
-          {:ok | :won | :lost, Field.t()}
-          | {:error, :out_of_field | :invalid_position | :not_running}
+          {:ok, Field.t()} | {:error, :out_of_field | :invalid_position | :not_running}
 
   @type on_toggle_mark() ::
           {:ok, Field.t()} | {:error, :out_of_field | :invalid_position | :not_running}
@@ -95,20 +94,16 @@ defmodule CoopMinesweeper.Game.Field do
       tiles[pos].mine? ->
         field = reveal_mines(field, :lost)
         field = put_in(field.state, :lost)
-        {:lost, field}
+        {:ok, field}
 
       true ->
         field = reveal_tile(field, pos)
 
         if won?(field) do
-          field =
-            if field.mines_left > 0,
-              do: reveal_mines(field, :won),
-              else: field
-
+          field = reveal_mines(field, :won)
           field = put_in(field.mines_left, 0)
           field = put_in(field.state, :won)
-          {:won, field}
+          {:ok, field}
         else
           {:ok, field}
         end
@@ -282,6 +277,8 @@ defmodule CoopMinesweeper.Game.Field do
 
   # Reveals mines and identifies false marks.
   @spec reveal_mines(field :: Field.t(), mode :: :won | :lost) :: Field.t()
+  defp reveal_mines(%Field{mines_left: 0} = field, _mode), do: field
+
   defp reveal_mines(%Field{tiles: tiles} = field, mode) do
     hidden_substitution = if mode == :won, do: :mark, else: :mine
 

@@ -37,11 +37,8 @@ defmodule CoopMinesweeper.Game.Game do
       game_agent,
       fn field ->
         case Field.make_turn(field, pos) do
-          {status, updated_field} = ret when status in [:ok, :won, :lost] ->
-            {ret, updated_field}
-
-          {:error, _} = err ->
-            {err, field}
+          {:ok, updated_field} = ret -> {ret, updated_field}
+          {:error, _} = err -> {err, field}
         end
       end,
       :timer.seconds(120)
