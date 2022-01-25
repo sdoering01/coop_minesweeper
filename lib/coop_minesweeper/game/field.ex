@@ -36,6 +36,9 @@ defmodule CoopMinesweeper.Game.Field do
   @type on_toggle_mark() ::
           {:ok, Field.t()} | {:error, :out_of_field | :invalid_position | :not_running}
 
+  @type on_play_again() ::
+          {:ok, Field.t()} | {:error, :still_running}
+
   @doc """
   Generates a new field.
   """
@@ -182,6 +185,17 @@ defmodule CoopMinesweeper.Game.Field do
         row_str <> "\n"
       end
     end
+  end
+
+  @doc """
+  Resets a field that is not running.
+  """
+  @spec play_again(field :: Field.t()) :: on_play_again()
+  def play_again(%Field{state: :running}), do: {:error, :still_running}
+
+  def play_again(%Field{id: id, size: size, mines: mines}) do
+    {:ok, field} = new(size, mines, id)
+    {:ok, field}
   end
 
   @doc """

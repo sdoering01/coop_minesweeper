@@ -61,4 +61,21 @@ defmodule CoopMinesweeper.Game.Game do
       :timer.seconds(120)
     )
   end
+
+  @doc """
+  Restarts a game that is over.
+  """
+  @spec play_again(game_agent :: pid()) :: Field.on_play_again()
+  def play_again(game_agent) do
+    Agent.get_and_update(
+      game_agent,
+      fn field ->
+        case Field.play_again(field) do
+          {:ok, updated_field} = ret -> {ret, updated_field}
+          {:error, _} = err -> {err, field}
+        end
+      end,
+      :timer.seconds(120)
+    )
+  end
 end
