@@ -12,7 +12,6 @@ defmodule CoopMinesweeper.Game.Field do
   @max_size 20
   @min_mines 5
 
-  # TODO: Don't allow make_mark until mines are initialized
   defstruct [:id, :size, :mines, :tiles, :mines_left, :state, mines_initialized: false]
 
   @type position() :: {non_neg_integer(), non_neg_integer()}
@@ -121,6 +120,9 @@ defmodule CoopMinesweeper.Game.Field do
   """
   @spec toggle_mark(field :: Field.t(), pos :: position()) :: on_toggle_mark()
   def toggle_mark(%Field{state: state}, _pos) when state != :running, do: {:error, :not_running}
+
+  def toggle_mark(%Field{mines_initialized: mines_initialized}, _pos) when not mines_initialized,
+    do: {:error, :mines_not_initialized}
 
   def toggle_mark(%Field{size: size}, {row, col})
       when row < 0 or row >= size or col < 0 or col >= size,
