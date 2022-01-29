@@ -272,7 +272,7 @@ defmodule CoopMinesweeper.Game.Field do
   # reveal all surrounding tiles.
   @spec reveal_tile(field :: Field.t(), pos :: position()) :: Field.t()
   defp reveal_tile(%Field{} = field, pos) do
-    if field.tiles[pos].state != :hidden do
+    if field.tiles[pos].state not in [:hidden, :mark] do
       field
     else
       field = update_in(field.tiles[pos], &Tile.set_state(&1, :revealed))
