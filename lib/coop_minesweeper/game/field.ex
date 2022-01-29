@@ -9,7 +9,7 @@ defmodule CoopMinesweeper.Game.Field do
   alias CoopMinesweeper.Game.Tile
 
   @min_size 6
-  @max_size 20
+  @max_size 50
   @min_mines 5
 
   defstruct [:id, :size, :mines, :tiles, :mines_left, :state, mines_initialized: false]
@@ -31,10 +31,10 @@ defmodule CoopMinesweeper.Game.Field do
   @type on_new_error() :: {:error, :too_small | :too_large | :too_few_mines | :too_many_mines}
 
   @type on_make_turn() ::
-          {:ok, Field.t()} | {:error, :out_of_field | :invalid_position | :not_running}
+          {:ok, {Field.t(), tiles()}} | {:error, :out_of_field | :invalid_position | :not_running}
 
   @type on_toggle_mark() ::
-          {:ok, Field.t()} | {:error, :out_of_field | :invalid_position | :not_running}
+          {:ok, {Field.t(), tiles()}} | {:error, :out_of_field | :invalid_position | :not_running}
 
   @type on_play_again() ::
           {:ok, Field.t()} | {:error, :still_running}
@@ -95,20 +95,21 @@ defmodule CoopMinesweeper.Game.Field do
         {:error, :invalid_position}
 
       tiles[pos].mine? ->
-        field = reveal_mines(field, :lost)
-        field = put_in(field.state, :lost)
-        {:ok, field}
+        {field, changes} = reveal_mines(field, :lost)
+        field = %{field | state: :lost}
+        {:ok, {field, changes}}
 
       true ->
-        field = reveal_tile(field, pos)
+        {field, changes} = reveal_tile(field, pos)
 
         if won?(field) do
-          field = reveal_mines(field, :won)
-          field = put_in(field.mines_left, 0)
-          field = put_in(field.state, :won)
-          {:ok, field}
+          {field, reveal_changes} = reveal_mines(field, :won)
+          changes = Map.merge(changes, reveal_changes)
+          field = %{field | mines_left: 0}
+          field = %{field | state: :won}
+          {:ok, {field, changes}}
         else
-          {:ok, field}
+          {:ok, {field, changes}}
         end
     end
   end
@@ -131,12 +132,12 @@ defmodule CoopMinesweeper.Game.Field do
       :hidden ->
         field = update_in(field.tiles[pos], &Tile.set_state(&1, :mark))
         field = Map.update!(field, :mines_left, &(&1 - 1))
-        {:ok, field}
+        {:ok, {field, %{pos => field.tiles[pos]}}}
 
       :mark ->
         field = update_in(field.tiles[pos], &Tile.set_state(&1, :hidden))
         field = Map.update!(field, :mines_left, &(&1 + 1))
-        {:ok, field}
+        {:ok, {field, %{pos => field.tiles[pos]}}}
 
       _ ->
         {:error, :invalid_position}
@@ -270,42 +271,49 @@ defmodule CoopMinesweeper.Game.Field do
 
   # Reveals a tile which is not a mine. If the tile has zero mines close, also
   # reveal all surrounding tiles.
-  @spec reveal_tile(field :: Field.t(), pos :: position()) :: Field.t()
-  defp reveal_tile(%Field{} = field, pos) do
+  @spec reveal_tile(
+          field :: Field.t(),
+          pos :: position(),
+          changes_so_far :: tiles()
+        ) :: {Field.t(), tiles()}
+  defp reveal_tile(%Field{} = field, pos, changes_so_far \\ %{}) do
     if field.tiles[pos].state != :hidden do
-      field
+      {field, changes_so_far}
     else
       field = update_in(field.tiles[pos], &Tile.set_state(&1, :revealed))
+      changes_so_far = Map.put(changes_so_far, pos, field.tiles[pos])
 
       if field.tiles[pos].mines_close == 0 do
         field
         |> get_surrounding_positions(pos, false)
-        |> Enum.reduce(field, fn sur_pos, field ->
-          reveal_tile(field, sur_pos)
+        |> Enum.reduce({field, changes_so_far}, fn sur_pos, {field, changes_so_far} ->
+          reveal_tile(field, sur_pos, changes_so_far)
         end)
       else
-        field
+        {field, changes_so_far}
       end
     end
   end
 
   # Reveals mines and identifies false marks.
-  @spec reveal_mines(field :: Field.t(), mode :: :won | :lost) :: Field.t()
-  defp reveal_mines(%Field{mines_left: 0} = field, _mode), do: field
+  @spec reveal_mines(field :: Field.t(), mode :: :won | :lost) :: {Field.t(), tiles()}
+  defp reveal_mines(%Field{mines_left: 0} = field, _mode), do: {field, %{}}
 
   defp reveal_mines(%Field{tiles: tiles} = field, mode) do
     hidden_substitution = if mode == :won, do: :mark, else: :mine
 
-    Enum.reduce(Map.keys(tiles), field, fn pos, field ->
+    Enum.reduce(Map.keys(tiles), {field, %{}}, fn pos, {field, changes_so_far} ->
       cond do
         field.tiles[pos].mine? and field.tiles[pos].state == :hidden ->
-          update_in(field.tiles[pos], &Tile.set_state(&1, hidden_substitution))
+          field = update_in(field.tiles[pos], &Tile.set_state(&1, hidden_substitution))
+          {field, Map.put(changes_so_far, pos, field.tiles[pos])}
 
         field.tiles[pos].state == :mark and not field.tiles[pos].mine? ->
-          update_in(field.tiles[pos], &Tile.set_state(&1, :false_mark))
+          field = update_in(field.tiles[pos], &Tile.set_state(&1, :false_mark))
+          {field, Map.put(changes_so_far, pos, field.tiles[pos])}
 
         true ->
-          field
+          {field, changes_so_far}
       end
     end)
   end

@@ -37,7 +37,7 @@ defmodule CoopMinesweeper.Game.Game do
       game_agent,
       fn field ->
         case Field.make_turn(field, pos) do
-          {:ok, updated_field} = ret -> {ret, updated_field}
+          {:ok, {updated_field, _changes}} = ret -> {ret, updated_field}
           {:error, _} = err -> {err, field}
         end
       end,
@@ -54,7 +54,7 @@ defmodule CoopMinesweeper.Game.Game do
       game_agent,
       fn field ->
         case Field.toggle_mark(field, pos) do
-          {:ok, updated_field} = ret -> {ret, updated_field}
+          {:ok, {updated_field, _changes}} = ret -> {ret, updated_field}
           {:error, _} = err -> {err, field}
         end
       end,
