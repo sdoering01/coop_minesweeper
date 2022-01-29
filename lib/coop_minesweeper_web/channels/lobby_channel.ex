@@ -20,6 +20,6 @@ defmodule CoopMinesweeperWeb.LobbyChannel do
 
   # Fallback to not crash socket process
   def handle_in(event, _params, socket) do
-    {:reply, {:error, %{reason: "Unexpected event with name #{event}"}}, socket}
+    {:reply, {:error, %{reason: "unexpected_event", event: event}}, socket}
   end
 end
