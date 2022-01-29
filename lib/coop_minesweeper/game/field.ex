@@ -277,7 +277,7 @@ defmodule CoopMinesweeper.Game.Field do
           changes_so_far :: tiles()
         ) :: {Field.t(), tiles()}
   defp reveal_tile(%Field{} = field, pos, changes_so_far \\ %{}) do
-    if field.tiles[pos].state != :hidden do
+    if field.tiles[pos].state not in [:hidden, :mark] do
       {field, changes_so_far}
     else
       field = update_in(field.tiles[pos], &Tile.set_state(&1, :revealed))
