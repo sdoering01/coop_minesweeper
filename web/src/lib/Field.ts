@@ -14,7 +14,7 @@ interface UnparsedField {
     state: UnparsedFieldState;
 }
 
-type Changes = [[number, number], UnparsedTile][];
+export type Changes = [[number, number], UnparsedTile][];
 
 export enum FieldState {
     RUNNING,
@@ -69,6 +69,10 @@ export class Field {
         this.tiles = Array.from(Array(size), () =>
             Array.from(Array(size), () => ({ state: TileState.HIDDEN, minesClose: 0 }))
         );
+    }
+
+    public isValidPosition(row: number, col: number) {
+        return row >= 0 && row < this.size && col >= 0 && col < this.size;
     }
 
     private parseFieldState(unparsedState: UnparsedFieldState): FieldState {
