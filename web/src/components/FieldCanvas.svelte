@@ -191,8 +191,8 @@
             on:mouseup={handleMouseUp}
             on:mousemove={handleMouseMove}
             on:mouseleave={handleMouseLeave}
-            on:click={handleReveal}
-            on:contextmenu|preventDefault={handleToggle}
+            on:click={field.state === FieldState.RUNNING && handleReveal}
+            on:contextmenu|preventDefault={field.state === FieldState.RUNNING && handleToggle}
             width={field.size * tileSize}
             height={field.size * tileSize}
         />
