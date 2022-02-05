@@ -18,7 +18,8 @@ defmodule CoopMinesweeper.Application do
       CoopMinesweeperWeb.Endpoint,
       # Start a worker by calling: CoopMinesweeper.Worker.start_link(arg)
       # {CoopMinesweeper.Worker, arg}
-      CoopMinesweeper.Game.Supervisor
+      CoopMinesweeper.Game.Supervisor,
+      CoopMinesweeperWeb.Presence
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

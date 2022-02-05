@@ -4,17 +4,39 @@ defmodule CoopMinesweeperWeb.GameChannel do
   require Logger
   alias CoopMinesweeper.Game.{GameRegistry, Game, Field}
   alias CoopMinesweeperWeb.FieldView
+  alias CoopMinesweeperWeb.Presence
 
-  def join("game:" <> game_id, _message, socket) do
+  def join("game:" <> game_id, %{"name" => name}, socket) do
     case GameRegistry.get(game_id) do
       {:ok, game} ->
         field_json = FieldView.render("player_field.json", field: Game.get_field(game))
-        socket = assign(socket, game: game)
+        name = String.trim(name)
+        name = if String.length(name) > 0, do: name, else: "Anonymous"
+        user_id = :rand.uniform(1_000_000_000)
+
+        send(self(), :after_join)
+
+        socket =
+          socket
+          |> assign(:game, game)
+          |> assign(:name, name)
+          |> assign(:user_id, user_id)
+
         {:ok, %{field: field_json}, socket}
 
       {:error, :not_found_error} ->
         {:error, %{reason: "does_not_exist"}}
     end
+  end
+
+  def handle_info(:after_join, socket) do
+    {:ok, _} =
+      Presence.track(socket, socket.assigns.user_id, %{
+        name: socket.assigns.name
+      })
+
+    push(socket, "presence_state", Presence.list(socket))
+    {:noreply, socket}
   end
 
   def handle_in("tile:reveal", %{"row" => row, "col" => col}, socket)

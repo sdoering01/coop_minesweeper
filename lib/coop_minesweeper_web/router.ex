@@ -20,10 +20,11 @@ defmodule CoopMinesweeperWeb.Router do
     get "/", PageController, :index
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", CoopMinesweeperWeb do
-  #   pipe_through :api
-  # end
+  scope "/", CoopMinesweeperWeb do
+    pipe_through :api
+
+    get "/game/:game_id/info", GameController, :info
+  end
 
   # Enables LiveDashboard only for development
   #
