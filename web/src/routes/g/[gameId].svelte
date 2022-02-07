@@ -177,7 +177,7 @@
     <h3>Players</h3>
     <ul>
         {#each userList as { userId, name } (userId)}
-            <li transition:fade>{name}</li>
+            <li transition:fade|local>{name}</li>
         {/each}
     </ul>
 {/if}
