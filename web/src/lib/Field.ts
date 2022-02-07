@@ -12,6 +12,7 @@ interface UnparsedField {
     mines_left: number;
     tiles: UnparsedTile[][];
     state: UnparsedFieldState;
+    recent_player: string;
 }
 
 export type Changes = [[number, number], UnparsedTile][];
@@ -41,31 +42,45 @@ export class Field {
     public minesLeft: number;
     public tiles: Tile[][];
     public state: FieldState;
+    public recentPlayer: string;
 
-    constructor({ mines, size, mines_left, tiles, state }: UnparsedField) {
+    constructor({ mines, size, mines_left, tiles, state, recent_player }: UnparsedField) {
         this.mines = mines;
         this.size = size;
         this.minesLeft = mines_left;
         this.tiles = tiles.map((row) => row.map((tile) => this.parseTile(tile)));
         this.state = this.parseFieldState(state);
+        this.recentPlayer = recent_player;
     }
 
     public handleChanges(
-        { mines_left, state }: Pick<UnparsedField, 'mines_left' | 'state'>,
+        {
+            mines_left,
+            state,
+            recent_player
+        }: Pick<UnparsedField, 'mines_left' | 'state' | 'recent_player'>,
         changes: Changes
     ): void {
         this.minesLeft = mines_left;
         this.state = this.parseFieldState(state);
+        this.recentPlayer = recent_player;
         for (const [[row, col], tile] of changes) {
             this.tiles[row][col] = this.parseTile(tile);
         }
     }
 
-    public playAgain({ mines, size, mines_left, state }: Omit<UnparsedField, 'tiles'>) {
+    public playAgain({
+        mines,
+        size,
+        mines_left,
+        state,
+        recent_player
+    }: Omit<UnparsedField, 'tiles'>) {
         this.mines = mines;
         this.size = size;
         this.minesLeft = mines_left;
         this.state = this.parseFieldState(state);
+        this.recentPlayer = recent_player;
         this.tiles = Array.from(Array(size), () =>
             Array.from(Array(size), () => ({ state: TileState.HIDDEN, minesClose: 0 }))
         );

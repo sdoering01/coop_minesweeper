@@ -24,7 +24,7 @@ defmodule CoopMinesweeperWeb.FieldView do
   end
 
   def render("field_changes.json", %{
-        field: %Field{mines_left: mines_left, state: state},
+        field: %Field{mines_left: mines_left, state: state, recent_player: recent_player},
         changes: changes
       }) do
     %{
@@ -34,19 +34,27 @@ defmodule CoopMinesweeperWeb.FieldView do
         end,
       field: %{
         mines_left: mines_left,
-        state: state
+        state: state,
+        recent_player: recent_player
       }
     }
   end
 
   def render("field_metadata.json", %{
-        field: %Field{size: size, mines: mines, mines_left: mines_left, state: state}
+        field: %Field{
+          size: size,
+          mines: mines,
+          mines_left: mines_left,
+          state: state,
+          recent_player: recent_player
+        }
       }) do
     %{
       size: size,
       mines: mines,
       mines_left: mines_left,
-      state: state
+      state: state,
+      recent_player: recent_player
     }
   end
 

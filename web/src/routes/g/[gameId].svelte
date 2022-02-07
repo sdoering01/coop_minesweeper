@@ -166,7 +166,7 @@
         {#if field.state === FieldState.RUNNING}
             Game running
         {:else}
-            Game {field.state === FieldState.WON ? 'won' : 'lost'}
+            Game {field.state === FieldState.WON ? 'won' : 'lost'} by {field.recentPlayer}
             <button on:click={handlePlayAgain}>Play again</button>
         {/if}
     </p>

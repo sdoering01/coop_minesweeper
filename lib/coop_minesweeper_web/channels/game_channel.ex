@@ -41,7 +41,7 @@ defmodule CoopMinesweeperWeb.GameChannel do
 
   def handle_in("tile:reveal", %{"row" => row, "col" => col}, socket)
       when is_integer(row) and is_integer(col) do
-    case Game.make_turn(socket.assigns.game, {row, col}) do
+    case Game.make_turn(socket.assigns.game, {row, col}, socket.assigns.name) do
       {:ok, {new_field, changes}} ->
         # broadcast_field(socket, new_field)
         broadcast_changes(socket, new_field, changes)
@@ -54,7 +54,7 @@ defmodule CoopMinesweeperWeb.GameChannel do
 
   def handle_in("tile:toggle", %{"row" => row, "col" => col}, socket)
       when is_integer(row) and is_integer(col) do
-    case Game.toggle_mark(socket.assigns.game, {row, col}) do
+    case Game.toggle_mark(socket.assigns.game, {row, col}, socket.assigns.name) do
       {:ok, {new_field, changes}} ->
         # broadcast_field(socket, new_field)
         broadcast_changes(socket, new_field, changes)

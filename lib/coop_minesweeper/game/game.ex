@@ -31,12 +31,13 @@ defmodule CoopMinesweeper.Game.Game do
   @doc """
   Makes a turn in the game.
   """
-  @spec make_turn(game_agent :: pid(), pos :: Field.position()) :: Field.on_make_turn()
-  def make_turn(game_agent, pos) do
+  @spec make_turn(game_agent :: pid(), pos :: Field.position(), player :: String.t()) ::
+          Field.on_make_turn()
+  def make_turn(game_agent, pos, player) do
     Agent.get_and_update(
       game_agent,
       fn field ->
-        case Field.make_turn(field, pos) do
+        case Field.make_turn(field, pos, player) do
           {:ok, {updated_field, _changes}} = ret -> {ret, updated_field}
           {:error, _} = err -> {err, field}
         end
@@ -48,12 +49,13 @@ defmodule CoopMinesweeper.Game.Game do
   @doc """
   Toggles a mark in the game.
   """
-  @spec toggle_mark(game_agent :: pid(), pos :: Field.position()) :: Field.on_toggle_mark()
-  def toggle_mark(game_agent, pos) do
+  @spec toggle_mark(game_agent :: pid(), pos :: Field.position(), player :: String.t()) ::
+          Field.on_toggle_mark()
+  def toggle_mark(game_agent, pos, player) do
     Agent.get_and_update(
       game_agent,
       fn field ->
-        case Field.toggle_mark(field, pos) do
+        case Field.toggle_mark(field, pos, player) do
           {:ok, {updated_field, _changes}} = ret -> {ret, updated_field}
           {:error, _} = err -> {err, field}
         end

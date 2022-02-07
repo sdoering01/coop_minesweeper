@@ -12,7 +12,16 @@ defmodule CoopMinesweeper.Game.Field do
   @max_size 50
   @min_mines 5
 
-  defstruct [:id, :size, :mines, :tiles, :mines_left, :state, mines_initialized: false]
+  defstruct [
+    :id,
+    :size,
+    :mines,
+    :tiles,
+    :mines_left,
+    :state,
+    mines_initialized: false,
+    recent_player: ""
+  ]
 
   @type position() :: {non_neg_integer(), non_neg_integer()}
   @type tiles() :: %{position() => Tile.t()}
@@ -25,7 +34,8 @@ defmodule CoopMinesweeper.Game.Field do
           tiles: tiles(),
           mines_left: non_neg_integer(),
           mines_initialized: boolean(),
-          state: state()
+          state: state(),
+          recent_player: String.t()
         }
 
   @type on_new_error() :: {:error, :too_small | :too_large | :too_few_mines | :too_many_mines}
@@ -74,32 +84,33 @@ defmodule CoopMinesweeper.Game.Field do
   turn. This ensures that the first turn isn't placed on a mine and reveals a
   bigger area.
   """
-  @spec make_turn(field :: Field.t(), pos :: position()) :: on_make_turn()
-  def make_turn(%Field{state: state}, _pos) when state != :running, do: {:error, :not_running}
+  @spec make_turn(field :: Field.t(), pos :: position(), player :: String.t()) :: on_make_turn()
+  def make_turn(%Field{state: state}, _pos, _player) when state != :running,
+    do: {:error, :not_running}
 
-  def make_turn(%Field{size: size}, {row, col})
+  def make_turn(%Field{size: size}, {row, col}, _player)
       when row < 0 or row >= size or col < 0 or col >= size,
       do: {:error, :out_of_field}
 
-  def make_turn(%Field{mines_initialized: false} = field, pos) do
+  def make_turn(%Field{mines_initialized: false} = field, pos, player) do
     restricted_positions = get_surrounding_positions(field, pos)
     field = initialize_mines(field, restricted_positions)
     field = %{field | mines_initialized: true}
 
-    make_turn(field, pos)
+    make_turn(field, pos, player)
   end
 
-  def make_turn(%Field{tiles: tiles} = field, pos) do
-    cond do
-      tiles[pos].state != :hidden ->
-        {:error, :invalid_position}
+  def make_turn(%Field{tiles: tiles} = field, pos, player) do
+    if tiles[pos].state != :hidden do
+      {:error, :invalid_position}
+    else
+      field = %{field | recent_player: player}
 
-      tiles[pos].mine? ->
+      if tiles[pos].mine? do
         {field, changes} = reveal_mines(field, :lost)
         field = %{field | state: :lost}
         {:ok, {field, changes}}
-
-      true ->
+      else
         {field, changes} = reveal_tile(field, pos)
 
         if won?(field) do
@@ -111,32 +122,38 @@ defmodule CoopMinesweeper.Game.Field do
         else
           {:ok, {field, changes}}
         end
+      end
     end
   end
 
   @doc """
   Marks a hidden tile or removes the mark of a marked tile.
   """
-  @spec toggle_mark(field :: Field.t(), pos :: position()) :: on_toggle_mark()
-  def toggle_mark(%Field{state: state}, _pos) when state != :running, do: {:error, :not_running}
+  @spec toggle_mark(field :: Field.t(), pos :: position(), player :: String.t()) ::
+          on_toggle_mark()
+  def toggle_mark(%Field{state: state}, _pos, _player) when state != :running,
+    do: {:error, :not_running}
 
-  def toggle_mark(%Field{mines_initialized: mines_initialized}, _pos) when not mines_initialized,
-    do: {:error, :mines_not_initialized}
+  def toggle_mark(%Field{mines_initialized: mines_initialized}, _pos, _player)
+      when not mines_initialized,
+      do: {:error, :mines_not_initialized}
 
-  def toggle_mark(%Field{size: size}, {row, col})
+  def toggle_mark(%Field{size: size}, {row, col}, _player)
       when row < 0 or row >= size or col < 0 or col >= size,
       do: {:error, :out_of_field}
 
-  def toggle_mark(%Field{tiles: tiles} = field, pos) do
+  def toggle_mark(%Field{tiles: tiles} = field, pos, player) do
     case tiles[pos].state do
       :hidden ->
         field = update_in(field.tiles[pos], &Tile.set_state(&1, :mark))
         field = Map.update!(field, :mines_left, &(&1 - 1))
+        field = %{field | recent_player: player}
         {:ok, {field, %{pos => field.tiles[pos]}}}
 
       :mark ->
         field = update_in(field.tiles[pos], &Tile.set_state(&1, :hidden))
         field = Map.update!(field, :mines_left, &(&1 + 1))
+        field = %{field | recent_player: player}
         {:ok, {field, %{pos => field.tiles[pos]}}}
 
       _ ->
