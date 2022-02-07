@@ -3,6 +3,7 @@
 
     import { Field, FieldState } from '$lib/Field';
     import { backendUrl } from '$lib/config';
+    import { autoFocus } from '$lib/hooks/auto-focus';
 
     const NAME_STORAGE_KEY = 'coop_minesweeper_name';
 
@@ -120,6 +121,7 @@
             });
         }
     };
+
 </script>
 
 <svelte:head>
@@ -150,7 +152,7 @@
     {#if !channel}
         <p>Game {fieldInfo.state} &bull; Size: {fieldInfo.size} &bull; Mines: {fieldInfo.mines}</p>
         <form on:submit|preventDefault={handleJoin}>
-            <input type="text" placeholder="Anonymous" bind:value={name} />
+            <input type="text" placeholder="Anonymous" bind:value={name} use:autoFocus />
             <button type="submit">Join</button>
         </form>
     {/if}
