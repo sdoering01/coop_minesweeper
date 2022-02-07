@@ -14,6 +14,11 @@
         state: string;
     }
 
+    interface User {
+        userId: string;
+        name: string;
+    }
+
     export const load: Load = async ({ fetch, params: { gameId } }) => {
         let fieldInfo: FieldInfo = null;
 
@@ -56,7 +61,7 @@
     let joinError = '';
     let field: Field;
     let name = browser ? localStorage.getItem(NAME_STORAGE_KEY) || '' : '';
-    let userList = [];
+    let userList: User[] = [];
 
     let paintChanges: (changes: Changes) => void;
     let repaint: () => void;
