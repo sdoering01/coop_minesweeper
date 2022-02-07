@@ -148,6 +148,7 @@
 <h2>Game {gameId}</h2>
 {#if fieldInfo}
     {#if !channel}
+        <p>Game {fieldInfo.state} &bull; Size: {fieldInfo.size} &bull; Mines: {fieldInfo.mines}</p>
         <form on:submit|preventDefault={handleJoin}>
             <input type="text" placeholder="Anonymous" bind:value={name} />
             <button type="submit">Join</button>
