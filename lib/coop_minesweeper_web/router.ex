@@ -23,7 +23,8 @@ defmodule CoopMinesweeperWeb.Router do
   scope "/", CoopMinesweeperWeb do
     pipe_through :api
 
-    get "/game/:game_id/info", GameController, :info
+    get "/games", GameController, :index
+    get "/games/:game_id/info", GameController, :info
   end
 
   # Enables LiveDashboard only for development

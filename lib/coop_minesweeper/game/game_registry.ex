@@ -7,21 +7,28 @@ defmodule CoopMinesweeper.Game.GameRegistry do
   game agents are supervised so that they can't crash the application.
   """
 
+  alias CoopMinesweeper.Game.{Game, Field}
+
   @type not_found_error() :: {:error, :not_found_error}
 
   @doc """
   Creates a new game agent, supervises it and puts it into the registry.
   """
-  @spec create(size :: non_neg_integer(), mines :: non_neg_integer()) ::
+  @spec create(
+          size :: non_neg_integer(),
+          mines :: non_neg_integer(),
+          visibility :: Field.visibility()
+        ) ::
           {:ok, {String.t(), pid()}} | {:error, any()}
-  def create(size, mines) do
+  def create(size, mines, visibility) do
     game_id = generate_game_id()
     name = {:via, Registry, {CoopMinesweeper.GameRegistry, game_id}}
 
     with {:ok, game_agent} <-
            DynamicSupervisor.start_child(
              CoopMinesweeper.GameSupervisor,
-             {CoopMinesweeper.Game.Game, size: size, mines: mines, game_id: game_id, name: name}
+             {Game,
+              size: size, mines: mines, game_id: game_id, name: name, visibility: visibility}
            ) do
       {:ok, {game_id, game_agent}}
     end
@@ -48,6 +55,12 @@ defmodule CoopMinesweeper.Game.GameRegistry do
       # can handle exits, so it is ok to just kill the game agent.
       Process.exit(game_agent, :kill)
     end
+  end
+
+  @spec list_game_pids() :: [pid()]
+  def list_game_pids() do
+    select_pid = [{{:_, :"$1", :_}, [], [:"$1"]}]
+    Registry.select(CoopMinesweeper.GameRegistry, select_pid)
   end
 
   @spec generate_game_id() :: String.t()

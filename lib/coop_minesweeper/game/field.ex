@@ -19,6 +19,7 @@ defmodule CoopMinesweeper.Game.Field do
     :tiles,
     :mines_left,
     :state,
+    :visibility,
     mines_initialized: false,
     recent_player: ""
   ]
@@ -26,6 +27,7 @@ defmodule CoopMinesweeper.Game.Field do
   @type position() :: {non_neg_integer(), non_neg_integer()}
   @type tiles() :: %{position() => Tile.t()}
   @type state() :: :running | :won | :lost
+  @type visibility() :: :public | :private
 
   @type t() :: %Field{
           id: String.t(),
@@ -34,6 +36,7 @@ defmodule CoopMinesweeper.Game.Field do
           tiles: tiles(),
           mines_left: non_neg_integer(),
           mines_initialized: boolean(),
+          visibility: visibility(),
           state: state(),
           recent_player: String.t()
         }
@@ -52,14 +55,20 @@ defmodule CoopMinesweeper.Game.Field do
   @doc """
   Generates a new field.
   """
-  @spec new(size :: non_neg_integer(), mines :: non_neg_integer(), game_id :: String.t()) ::
+  @spec new(
+          size :: non_neg_integer(),
+          mines :: non_neg_integer(),
+          game_id :: String.t(),
+          visibility :: visibility()
+        ) ::
           {:ok, Field.t()} | on_new_error()
-  def new(size, _, _) when size < @min_size, do: {:error, :too_small}
-  def new(size, _, _) when size > @max_size, do: {:error, :too_large}
-  def new(_, mines, _) when mines < @min_mines, do: {:error, :too_few_mines}
-  def new(size, mines, _) when mines > size * size / 4, do: {:error, :too_many_mines}
+  def new(size, _, _, _) when size < @min_size, do: {:error, :too_small}
+  def new(size, _, _, _) when size > @max_size, do: {:error, :too_large}
+  def new(_, mines, _, _) when mines < @min_mines, do: {:error, :too_few_mines}
+  def new(size, mines, _, _) when mines > size * size / 4, do: {:error, :too_many_mines}
 
-  def new(size, mines, game_id) when is_binary(game_id) do
+  def new(size, mines, game_id, visibility)
+      when is_binary(game_id) and visibility in [:public, :private] do
     tiles =
       for row <- 0..(size - 1), col <- 0..(size - 1), into: %{} do
         {{row, col}, %Tile{}}
@@ -71,6 +80,7 @@ defmodule CoopMinesweeper.Game.Field do
       mines: mines,
       tiles: tiles,
       mines_left: mines,
+      visibility: visibility,
       state: :running
     }
 
@@ -211,8 +221,8 @@ defmodule CoopMinesweeper.Game.Field do
   @spec play_again(field :: Field.t()) :: on_play_again()
   def play_again(%Field{state: :running}), do: {:error, :still_running}
 
-  def play_again(%Field{id: id, size: size, mines: mines}) do
-    {:ok, field} = new(size, mines, id)
+  def play_again(%Field{id: id, size: size, mines: mines, visibility: visibility}) do
+    {:ok, field} = new(size, mines, id, visibility)
     {:ok, field}
   end
 

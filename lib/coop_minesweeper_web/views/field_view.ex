@@ -58,6 +58,32 @@ defmodule CoopMinesweeperWeb.FieldView do
     }
   end
 
+  def render("field_list.json", %{
+        field_list: field_list
+      }) do
+    render_many(field_list, CoopMinesweeperWeb.FieldView, "field_list_entry.json", as: :list_entry)
+  end
+
+  def render("field_list_entry.json", %{
+        list_entry: %{
+          field: %Field{
+            id: id,
+            size: size,
+            mines: mines,
+            mines_left: mines_left
+          },
+          player_count: player_count
+        }
+      }) do
+    %{
+      id: id,
+      size: size,
+      mines: mines,
+      mines_left: mines_left,
+      player_count: player_count
+    }
+  end
+
   def render("tile.json", %{tile: %Tile{state: :revealed, mines_close: mines_close}}) do
     %{state: :revealed, mines_close: mines_close}
   end

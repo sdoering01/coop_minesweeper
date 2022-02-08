@@ -14,8 +14,9 @@ defmodule CoopMinesweeper.Game.Game do
     size = Keyword.fetch!(opts, :size)
     mines = Keyword.fetch!(opts, :mines)
     game_id = Keyword.fetch!(opts, :game_id)
+    visibility = Keyword.fetch!(opts, :visibility)
 
-    with {:ok, field} <- Field.new(size, mines, game_id) do
+    with {:ok, field} <- Field.new(size, mines, game_id, visibility) do
       Agent.start_link(fn -> field end, opts)
     end
   end

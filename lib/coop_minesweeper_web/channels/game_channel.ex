@@ -78,7 +78,8 @@ defmodule CoopMinesweeperWeb.GameChannel do
   end
 
   # Fallback to not crash socket process
-  def handle_in(event, _params, socket) do
+  def handle_in(event, params, socket) do
+    Logger.info(message: "Unexpected event", event: event, params: params)
     {:reply, {:error, %{reason: "unexpected_event", event: event}}, socket}
   end
 

@@ -22,7 +22,7 @@
     export const load: Load = async ({ fetch, params: { gameId } }) => {
         let fieldInfo: FieldInfo = null;
 
-        const response = await fetch(`${backendUrl}/game/${gameId}/info`);
+        const response = await fetch(`${backendUrl}/games/${gameId}/info`);
         if (response.ok) {
             const json = await response.json();
             fieldInfo = {
@@ -126,7 +126,6 @@
             });
         }
     };
-
 </script>
 
 <svelte:head>

@@ -5,12 +5,14 @@
     import type { Channel } from 'phoenix';
 
     import { socket } from '$lib/socket';
+    import GameList from '$components/GameList.svelte';
 
     let channel: Channel;
     let loading = true;
     let createError = '';
     let size = 14;
-    let mines = 20
+    let mines = 20;
+    let visibility = 'public';
 
     if (browser) {
         channel = socket.channel('lobby');
@@ -36,12 +38,12 @@
     const handleCreateGame = () => {
         loading = true;
         channel
-            .push('create_game', {size, mines})
+            .push('create_game', { size, mines, visibility })
             .receive('ok', ({ game_id: gameId }) => {
                 console.log('Created game with id', gameId);
                 goto(`/g/${gameId}`);
             })
-            .receive('error', ({reason, message}) => {
+            .receive('error', ({ reason, message }) => {
                 console.log('Could not create game:', reason, message);
                 createError = message;
                 loading = false;
@@ -61,16 +63,35 @@
     <input id="field-size" type="number" bind:value={size} />
     <label for="field-mines">Mines:</label>
     <input id="field-mines" type="number" bind:value={mines} />
+    <p>Visibility:</p>
+    <label class="radio"
+        ><input type="radio" bind:group={visibility} name="visibility" value="public" /> Public</label
+    >
+    <label class="radio"
+        ><input type="radio" bind:group={visibility} name="visibility" value="private" /> Private</label
+    >
     <button type="submit" disabled={loading}>Create game</button>
 </form>
 
-<style>
-.game-configuration {
-    display: grid;
-    grid-template-columns: 50px 50px;
-}
+<GameList />
 
-.game-configuration > button {
-    grid-column: 1 / 3;
-}
+<style>
+    form {
+        margin-bottom: 16px;
+    }
+
+    .game-configuration {
+        display: grid;
+        grid-template-columns: 50px 50px;
+    }
+
+    .game-configuration > button,
+    .game-configuration > .radio,
+    .game-configuration > p {
+        grid-column: 1 / 3;
+    }
+
+    .game-configuration > p {
+        margin: 0;
+    }
 </style>

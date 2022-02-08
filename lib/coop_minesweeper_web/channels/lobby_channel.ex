@@ -7,9 +7,13 @@ defmodule CoopMinesweeperWeb.LobbyChannel do
     {:ok, socket}
   end
 
-  def handle_in("create_game", %{"size" => size, "mines" => mines}, socket)
-      when is_number(size) and is_number(mines) do
-    case GameRegistry.create(size, mines) do
+  def handle_in(
+        "create_game",
+        %{"size" => size, "mines" => mines, "visibility" => visibility},
+        socket
+      )
+      when is_number(size) and is_number(mines) and visibility in ~w[public private] do
+    case GameRegistry.create(size, mines, String.to_existing_atom(visibility)) do
       {:ok, {game_id, _}} ->
         {:reply, {:ok, %{game_id: game_id}}, socket}
 
@@ -21,7 +25,8 @@ defmodule CoopMinesweeperWeb.LobbyChannel do
   end
 
   # Fallback to not crash socket process
-  def handle_in(event, _params, socket) do
+  def handle_in(event, params, socket) do
+    Logger.info(message: "Unexpected event", event: event, params: params)
     {:reply, {:error, %{reason: "unexpected_event", event: event}}, socket}
   end
 
