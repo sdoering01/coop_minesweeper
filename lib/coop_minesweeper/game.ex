@@ -5,6 +5,7 @@ defmodule CoopMinesweeper.Game do
   @doc """
   Returns a capped amount of fields that are public and running.
   """
+  @spec list_public_fields() :: [%{player_count: pos_integer(), field: Field.t()}]
   def list_public_fields() do
     GameRegistry.list_game_pids()
     |> Stream.map(&Game.get_field/1)
