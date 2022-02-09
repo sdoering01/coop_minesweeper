@@ -20,6 +20,7 @@ defmodule CoopMinesweeper.Game.Field do
     :mines_left,
     :state,
     :visibility,
+    :last_interaction,
     mines_initialized: false,
     recent_player: ""
   ]
@@ -35,9 +36,10 @@ defmodule CoopMinesweeper.Game.Field do
           mines: non_neg_integer(),
           tiles: tiles(),
           mines_left: non_neg_integer(),
-          mines_initialized: boolean(),
-          visibility: visibility(),
           state: state(),
+          visibility: visibility(),
+          last_interaction: DateTime.t(),
+          mines_initialized: boolean(),
           recent_player: String.t()
         }
 
@@ -80,8 +82,9 @@ defmodule CoopMinesweeper.Game.Field do
       mines: mines,
       tiles: tiles,
       mines_left: mines,
+      state: :running,
       visibility: visibility,
-      state: :running
+      last_interaction: DateTime.utc_now()
     }
 
     {:ok, field}
@@ -115,6 +118,7 @@ defmodule CoopMinesweeper.Game.Field do
       {:error, :invalid_position}
     else
       field = %{field | recent_player: player}
+      field = %{field | last_interaction: DateTime.utc_now()}
 
       if tiles[pos].mine? do
         {field, changes} = reveal_mines(field, :lost)
@@ -153,21 +157,25 @@ defmodule CoopMinesweeper.Game.Field do
       do: {:error, :out_of_field}
 
   def toggle_mark(%Field{tiles: tiles} = field, pos, player) do
-    case tiles[pos].state do
-      :hidden ->
-        field = update_in(field.tiles[pos], &Tile.set_state(&1, :mark))
-        field = Map.update!(field, :mines_left, &(&1 - 1))
-        field = %{field | recent_player: player}
-        {:ok, {field, %{pos => field.tiles[pos]}}}
+    state = tiles[pos].state
 
-      :mark ->
-        field = update_in(field.tiles[pos], &Tile.set_state(&1, :hidden))
-        field = Map.update!(field, :mines_left, &(&1 + 1))
-        field = %{field | recent_player: player}
-        {:ok, {field, %{pos => field.tiles[pos]}}}
+    if state in [:hidden, :mark] do
+      field =
+        if state == :hidden do
+          field.tiles[pos]
+          |> update_in(&Tile.set_state(&1, :mark))
+          |> Map.update!(:mines_left, &(&1 - 1))
+        else
+          field.tiles[pos]
+          |> update_in(&Tile.set_state(&1, :hidden))
+          |> Map.update!(:mines_left, &(&1 + 1))
+        end
 
-      _ ->
-        {:error, :invalid_position}
+      field = %{field | recent_player: player}
+      field = %{field | last_interaction: DateTime.utc_now()}
+      {:ok, {field, %{pos => field.tiles[pos]}}}
+    else
+      {:error, :invalid_position}
     end
   end
 

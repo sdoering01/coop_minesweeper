@@ -8,6 +8,9 @@ defmodule CoopMinesweeper.Game.Game do
   use GenServer, restart: :temporary
 
   alias CoopMinesweeper.Game.Field
+  require Logger
+
+  @idle_time 5 * 60 * 1000
 
   ## Client API
 
@@ -64,7 +67,28 @@ defmodule CoopMinesweeper.Game.Game do
 
   @impl true
   def init(state) do
+    Process.send_after(self(), :maybe_cleanup, @idle_time)
     {:ok, state}
+  end
+
+  @impl true
+  def handle_info(:maybe_cleanup, %Field{id: id, last_interaction: last_interaction} = field) do
+    now = DateTime.utc_now()
+    cleanup_time = DateTime.add(last_interaction, @idle_time, :millisecond)
+    diff = DateTime.diff(cleanup_time, now, :millisecond)
+
+    if diff <= 0 do
+      if CoopMinesweeper.Game.get_game_player_count(id) > 0 do
+        Process.send_after(self(), :maybe_cleanup, @idle_time)
+        {:noreply, field}
+      else
+        Logger.info("Cleaning up game #{id}")
+        {:stop, :shutdown, field}
+      end
+    else
+      Process.send_after(self(), :maybe_cleanup, diff)
+      {:noreply, field}
+    end
   end
 
   @impl true
