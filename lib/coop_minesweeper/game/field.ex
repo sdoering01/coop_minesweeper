@@ -324,7 +324,7 @@ defmodule CoopMinesweeper.Game.Field do
 
   # Reveals mines and identifies false marks.
   @spec reveal_mines(field :: Field.t(), mode :: :won | :lost) :: {Field.t(), tiles()}
-  defp reveal_mines(%Field{mines_left: 0} = field, _mode), do: {field, %{}}
+  defp reveal_mines(%Field{mines_left: 0} = field, :won), do: {field, %{}}
 
   defp reveal_mines(%Field{tiles: tiles} = field, mode) do
     hidden_substitution = if mode == :won, do: :mark, else: :mine
