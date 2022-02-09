@@ -6,21 +6,21 @@ defmodule CoopMinesweeperWeb.GameChannel do
   alias CoopMinesweeperWeb.FieldView
   alias CoopMinesweeperWeb.Presence
 
-  def join("game:" <> game_id, %{"name" => name}, socket) do
+  @default_name "Anonymous"
+
+  def join("game:" <> game_id, _params, socket) do
     case GameRegistry.get(game_id) do
       {:ok, game} ->
         field_json = FieldView.render("player_field.json", field: Game.get_field(game))
-        name = String.trim(name)
-        name = if String.length(name) > 0, do: name, else: "Anonymous"
         user_id = :rand.uniform(1_000_000_000)
-
-        send(self(), :after_join)
 
         socket =
           socket
           |> assign(:game, game)
-          |> assign(:name, name)
           |> assign(:user_id, user_id)
+          |> assign(:joined, false)
+
+        send(self(), :after_join)
 
         {:ok, %{field: field_json}, socket}
 
@@ -32,12 +32,42 @@ defmodule CoopMinesweeperWeb.GameChannel do
   def handle_info(:after_join, socket) do
     {:ok, _} =
       Presence.track(socket, socket.assigns.user_id, %{
-        name: socket.assigns.name
+        name: @default_name,
+        joined: false
       })
 
     push(socket, "presence_state", Presence.list(socket))
     {:noreply, socket}
   end
+
+  def handle_info(:after_game_join, socket) do
+    {:ok, _} =
+      Presence.update(socket, socket.assigns.user_id, %{
+        name: socket.assigns.name,
+        joined: true
+      })
+
+    {:noreply, socket}
+  end
+
+  def handle_in("game:join", %{"name" => name}, socket) do
+    name = String.trim(name)
+    name = if String.length(name) > 0, do: name, else: @default_name
+
+    socket =
+      socket
+      |> assign(:name, name)
+      |> assign(:joined, true)
+
+    send(self(), :after_game_join)
+    {:reply, :ok, socket}
+  end
+
+  def handle_in(_event, _params, %{assigns: %{joined: false}} = socket) do
+    {:reply, {:error, %{reason: :not_joined}}, socket}
+  end
+
+  ## Only for joined players
 
   def handle_in("tile:reveal", %{"row" => row, "col" => col}, socket)
       when is_integer(row) and is_integer(col) do
