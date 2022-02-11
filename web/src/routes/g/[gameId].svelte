@@ -47,8 +47,11 @@
     import { browser } from '$app/env';
     import { type Channel, Presence } from 'phoenix';
     import { onDestroy, onMount } from 'svelte';
-    import { fade } from 'svelte/transition';
+    import { fade, fly } from 'svelte/transition';
     import { page } from '$app/stores';
+    import MdArrowBack from 'svelte-icons/md/MdArrowBack.svelte';
+    import MdPerson from 'svelte-icons/md/MdPerson.svelte';
+    import MdRemoveRedEye from 'svelte-icons/md/MdRemoveRedEye.svelte';
 
     import { socket } from '$lib/socket';
     import type { Changes } from '$lib/Field';
@@ -59,12 +62,12 @@
 
     let channel: Channel;
     let presence: Presence;
-    let joinError = '';
     let field: Field;
     let name = browser ? localStorage.getItem(NAME_STORAGE_KEY) || '' : '';
     let userList: User[] = [];
     let spectators = 0;
     let joined = false;
+    let joinDialogOpen = true;
 
     let paintChanges: (changes: Changes) => void;
     let repaint: () => void;
@@ -82,10 +85,11 @@
                 })
                 .receive('error', (payload) => {
                     console.log('Could not join game with id', gameId);
+                    // TODO: Show error with toast
                     if (payload.reason === 'does_not_exist') {
-                        joinError = 'A game with that id does not exist';
+                        console.log('A game with that id does not exist');
                     } else {
-                        joinError = 'An unexpected error occured';
+                        console.log('An unexpected error occured');
                     }
                     channel.leave();
                 });
@@ -135,6 +139,7 @@
         localStorage.setItem(NAME_STORAGE_KEY, name);
         channel.push('game:join', { name }).receive('ok', () => {
             joined = true;
+            joinDialogOpen = false;
         });
     };
 
@@ -169,66 +174,142 @@
     <meta property="og:url" content={$page.url.toString()} />
 </svelte:head>
 
-<a href="/">&larr; Back to lobby</a>
-<h2>Game {gameId}</h2>
-{#if joinError}
-    <p>{joinError}</p>
-{/if}
-<!-- TODO: Make width and height dynamic -->
-{#if field}
-    <p>Size: {field.size} &bull; Mines: {field.mines}</p>
-    <p>Mines left: {field.minesLeft}</p>
-    <p>
-        {#if field.state === FieldState.RUNNING}
-            Game running
-        {:else}
-            Game {field.state === FieldState.WON ? 'won' : 'lost'} by {field.recentPlayer}
-            {#if joined}
-                <button on:click={handlePlayAgain}>Play again</button>
+<div class="site-container max-w-[100rem] mx-auto p-4 h-screen gap-2">
+    <header class="navbar bg-neutral text-neutral-content rounded-box">
+        <div class="navbar-start px-2 mx-2">
+            <a href="/" class="btn btn-ghost btn-sm"
+                ><span class="icon"><MdArrowBack /></span>Back to lobby</a
+            >
+        </div>
+        <div class="navbar-center px-2 mx-2">
+            <h2 class="text-xl font-semibold text-accent">CoopMinesweeper</h2>
+        </div>
+        <div class="navbar-end">
+            <!-- TODO: Settings will go here -->
+        </div>
+    </header>
+    {#if !fieldInfo}
+        <div class="mt-2 col-span-full grid place-items-center">
+            <div class="alert alert-error text-xl">This game does not exist</div>
+        </div>
+    {:else}
+        <div
+            class="field-container bg-neutral card p-4 relative h-full w-full max-h-full max-w-full grid place-items-center"
+            on:contextmenu|preventDefault
+        >
+            {#if field}
+                {#if joinDialogOpen}
+                    <div
+                        class="absolute inset-0 grid place-items-center backdrop-blur-sm bg-black bg-opacity-50"
+                        transition:fade|local={{ duration: 300 }}
+                    >
+                        <div
+                            class="card bg-neutral shadow-2xl bg-opacity-80 px-6 py-4"
+                            transition:fly|local={{ y: 15, duration: 300 }}
+                        >
+                            <form on:submit|preventDefault={handleJoin}>
+                                <p class="mb-4 text-xl text-center">
+                                    Enter your name to participate
+                                </p>
+                                <div class="flex space-x-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Anonymous"
+                                        bind:value={name}
+                                        use:autoFocus
+                                        spellcheck="false"
+                                        class="input input-primary"
+                                    />
+                                    <button type="submit" class="btn btn-primary">Join</button>
+                                </div>
+                            </form>
+                            <div class="divider mx-12">OR</div>
+                            <button
+                                on:click={() => (joinDialogOpen = false)}
+                                class="btn btn-secondary">Spectate</button
+                            >
+                        </div>
+                    </div>
+                {/if}
+                <FieldCanvas {field} {channel} {joined} bind:paintChanges bind:repaint />
             {/if}
-        {/if}
-    </p>
-    <div class="field-wrapper">
-        {#if !joined}
-            <div class="join-overlay">
-                <form on:submit|preventDefault={handleJoin}>
-                    <p>Enter your name to participate</p>
-                    <input type="text" placeholder="Anonymous" bind:value={name} use:autoFocus />
-                    <button type="submit">Join</button>
-                </form>
-            </div>
-        {/if}
-        <FieldCanvas {field} {channel} bind:paintChanges bind:repaint />
-    </div>
-    <h3>Players ({spectators} spectator{spectators !== 1 ? 's' : ''})</h3>
-    <ul>
-        {#each userList as { userId, name } (userId)}
-            <li transition:fade|local>{name}</li>
-        {/each}
-    </ul>
-{/if}
+        </div>
+        <div class="game-info bg-neutral card p-4">
+            <h3 class="text-xl mb-1">Game {gameId}</h3>
+            {#if field}
+                <p>Size: {field.size} &bull; Mines: {field.mines}</p>
+                <p>Mines left: {field.minesLeft}</p>
+                <p>
+                    {#if field.state === FieldState.RUNNING}
+                        Game running
+                    {:else}
+                        Game {field.state === FieldState.WON ? 'won' : 'lost'} by {field.recentPlayer}
+                    {/if}
+                </p>
+                {#if joined && field.state !== FieldState.RUNNING}
+                    <button on:click={handlePlayAgain} class="btn btn-primary btn-sm mt-2"
+                        >Play again</button
+                    >
+                {/if}
+                {#if !joined && !joinDialogOpen}
+                    <div class="divider my-1" />
+                    <div class="flex flex-col">
+                        <p class="mb-2 flex items-center">
+                            <span class="icon inline-block mr-2"><MdRemoveRedEye /></span>You are
+                            spectating
+                        </p>
+                        <button
+                            on:click={() => (joinDialogOpen = true)}
+                            class="btn btn-primary btn-sm">Join</button
+                        >
+                    </div>
+                {/if}
+            {/if}
+        </div>
+        <div class="player-info bg-neutral card p-4">
+            {#if field}
+                <div class="flex justify-between align-center mb-4">
+                    <div class="flex items-center">
+                        <span class="icon"><MdPerson /></span>Players ({userList.length})
+                    </div>
+                    <div class="flex items-center">
+                        <span class="icon"><MdRemoveRedEye /></span>{spectators}
+                    </div>
+                </div>
+                <ul class="overflow-y-auto space-y-1">
+                    {#each userList as { userId, name } (userId)}
+                        <li transition:fade|local class="truncate max-w-full">{name}</li>
+                    {/each}
+                </ul>
+            {/if}
+        </div>
+    {/if}
+</div>
 
 <style>
-    .field-wrapper {
-        position: relative;
+    .site-container {
+        display: grid;
+        grid-template-areas:
+            'header header'
+            'field game-info'
+            'field player-info';
+        grid-template-columns: auto 250px;
+        grid-template-rows: auto auto minmax(0, 1fr);
     }
 
-    .join-overlay {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        background-color: rgba(0, 0, 0, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .site-container > header {
+        grid-area: header;
     }
 
-    .join-overlay > form {
-        padding: 32px;
-        border-radius: 8px;
-        background-color: rgba(0, 0, 0, 0.2);
-        backdrop-filter: blur(4px);
+    .field-container {
+        grid-area: field;
+    }
+
+    .game-info {
+        grid-area: game-info;
+    }
+
+    .player-info {
+        grid-area: player-info;
     }
 </style>

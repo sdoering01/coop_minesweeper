@@ -7,6 +7,7 @@
     export let field: Field;
     export let tileSize = 30;
     export let channel: Channel;
+    export let joined: boolean;
 
     let canvas: HTMLCanvasElement;
     let container: HTMLDivElement;
@@ -30,6 +31,8 @@
         repaintTile(hoverRow, hoverCol, false);
         hovering = false;
     }
+
+    $: interactive = joined && field.state === FieldState.RUNNING;
 
     export const paintChanges = (changes: Changes) => {
         const start = Date.now();
@@ -106,7 +109,7 @@
             const dy = ev.clientY - dragPos.y;
             container.scrollTop = dragPos.top - dy;
             container.scrollLeft = dragPos.left - dx;
-        } else if (field.state === FieldState.RUNNING) {
+        } else if (interactive) {
             const col = Math.floor(ev.offsetX / tileSize);
             const row = Math.floor(ev.offsetY / tileSize);
             if (field.isValidPosition(row, col)) {
@@ -129,11 +132,9 @@
     };
 
     const handleMouseLeave = () => {
-        if (field.state === FieldState.RUNNING) {
-            if (hovering) {
-                repaintTile(hoverRow, hoverCol, false);
-                hovering = false;
-            }
+        if (interactive && hovering) {
+            repaintTile(hoverRow, hoverCol, false);
+            hovering = false;
         }
         dragging = false;
     };
@@ -181,9 +182,8 @@
     };
 </script>
 
-<button on:click={repaint}>Repaint</button>
-<div class="container" bind:this={container}>
-    <div class="wrapper">
+<div class="scroll-container w-auto max-w-full max-h-full overflow-auto" bind:this={container}>
+    <div class="p-2 w-fit bg-black">
         <canvas
             style:cursor={dragging ? 'grabbing' : hovering ? 'pointer' : 'auto'}
             bind:this={canvas}
@@ -191,8 +191,8 @@
             on:mouseup={handleMouseUp}
             on:mousemove={handleMouseMove}
             on:mouseleave={handleMouseLeave}
-            on:click={field.state === FieldState.RUNNING && handleReveal}
-            on:contextmenu|preventDefault={field.state === FieldState.RUNNING && handleToggle}
+            on:click={interactive && handleReveal}
+            on:contextmenu|preventDefault={interactive && handleToggle}
             width={field.size * tileSize}
             height={field.size * tileSize}
         />
@@ -200,38 +200,31 @@
 </div>
 
 <style>
-    .container {
-        width: min-content;
-        max-width: 100%;
-        max-height: 75vh;
-        overflow: auto;
-        --scrollbar-bg: #666;
-        --scrollbar-fg: #111;
+    .scroll-container {
+        --scrollbar-bg: hsla(var(--b2));
+        --scrollbar-fg: hsla(var(--b3));
         --scrollbar-size: 11px;
         /* Firefox */
         scrollbar-width: var(--scrollbar-size);
         scrollbar-color: var(--scrollbar-fg) var(--scrollbar-bg);
     }
 
-    .container::-webkit-scrollbar {
+    .scroll-container::-webkit-scrollbar {
         width: var(--scrollbar-size);
         height: var(--scrollbar-size);
     }
 
-    .container::-webkit-scrollbar-thumb {
+    .scroll-container::-webkit-scrollbar-thumb {
         background-color: var(--scrollbar-fg);
         border-radius: 6px;
         border: solid 3px var(--scrollbar-bg);
     }
 
-    .container::-webkit-scrollbar-track {
+    .scroll-container::-webkit-scrollbar-track {
         background-color: var(--scrollbar-bg);
     }
 
-    .wrapper {
-        /* For some reason the canvas has ~4px margin at its bottom */
-        padding: 8px 8px 4px 8px;
-        background-color: black;
-        width: fit-content;
+    .scroll-container::-webkit-scrollbar-corner {
+        background-color: var(--scrollbar-bg);
     }
 </style>
