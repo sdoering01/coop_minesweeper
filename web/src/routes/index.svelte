@@ -3,16 +3,18 @@
     import { goto } from '$app/navigation';
     import { onDestroy } from 'svelte';
     import type { Channel } from 'phoenix';
+    import MdBlock from 'svelte-icons/md/MdBlock.svelte';
 
     import { socket } from '$lib/socket';
     import GameList from '$components/GameList.svelte';
 
     let channel: Channel;
+    let connecting = true;
     let loading = true;
     let createError = '';
     let size = 14;
     let mines = 20;
-    let visibility = 'public';
+    let privateGame = false;
 
     if (browser) {
         channel = socket.channel('lobby');
@@ -21,6 +23,7 @@
             .receive('ok', () => {
                 console.log('Joined lobby');
                 loading = false;
+                connecting = false;
             })
             .receive('error', () => console.log('Could not join lobby'));
 
@@ -37,6 +40,7 @@
 
     const handleCreateGame = () => {
         loading = true;
+        const visibility = privateGame ? 'private' : 'public';
         channel
             .push('create_game', { size, mines, visibility })
             .receive('ok', ({ game_id: gameId }) => {
@@ -51,47 +55,60 @@
     };
 </script>
 
-<h1>CoopMinesweeper</h1>
-<p>Play Minesweeper with your friends</p>
-
-{#if createError}
-    <p>{createError}</p>
-{/if}
-
-<form on:submit|preventDefault={handleCreateGame} class="game-configuration">
-    <label for="field-size">Size:</label>
-    <input id="field-size" type="number" bind:value={size} />
-    <label for="field-mines">Mines:</label>
-    <input id="field-mines" type="number" bind:value={mines} />
-    <p>Visibility:</p>
-    <label class="radio"
-        ><input type="radio" bind:group={visibility} name="visibility" value="public" /> Public</label
+<div class="flex flex-col gap-8 px-4 max-w-[100rem] mx-auto min-h-screen xl:flex-row xl:px-16">
+    <div
+        class="flex-1 flex-grow-[2] grid place-items-center text-center xl:sticky xl:top-0 xl:max-h-screen"
     >
-    <label class="radio"
-        ><input type="radio" bind:group={visibility} name="visibility" value="private" /> Private</label
-    >
-    <button type="submit" disabled={loading}>Create game</button>
-</form>
+        <div class="py-16 xl:mb-32 drop-shadow-xl">
+            <h1 class="text-3xl text-accent font-bold mb-8 xl:text-4xl">
+                Welcome to CoopMinesweeper
+            </h1>
+            <h2 class="text-2xl text-accent font-semibold opacity-75">
+                The place where you can play Minesweeper with your friends
+            </h2>
+        </div>
+    </div>
+    <div class="hidden divider divider-vertical py-24 xl:flex xl:sticky xl:top-0 xl:max-h-screen" />
+    <div class="flex-1 flex-grow-[3] pb-4 xl:py-16">
+        <form
+            on:submit|preventDefault={handleCreateGame}
+            class="card p-8 max-w-[24rem] mx-auto bg-base-200 shadow-xl"
+        >
+            <h2 class="text-2xl font-semibold text-center mb-2">Create a new Game</h2>
 
-<GameList />
+            {#if createError}
+                <div class="alert alert-error">
+                    <div class="flex-1">
+                        <span class="icon mr-2"><MdBlock /></span>
+                        <span>{createError}</span>
+                    </div>
+                </div>
+            {/if}
 
-<style>
-    form {
-        margin-bottom: 16px;
-    }
+            <label for="field-size" class="label"><span class="label-text">Size</span></label>
+            <input id="field-size" type="number" class="input" bind:value={size} />
+            <label for="field-mines" class="label"><span class="label-text">Mines</span></label>
+            <input id="field-mines" type="number" class="input" bind:value={mines} />
+            <div class="form-control">
+                <label class="cursor-pointer label">
+                    <span class="label-text"
+                        >Make game private
+                        <span
+                            data-tip="Only people with a special link can join the game"
+                            class="tooltip underline -ml-1 p-1 before:w-40 before:content-[attr(data-tip)] before:bg-base-300 after:border-t-base-300"
+                            >?</span
+                        >
+                    </span>
+                    <input type="checkbox" class="toggle" bind:value={privateGame} />
+                </label>
+            </div>
+            <button type="submit" disabled={connecting} class="btn btn-primary" class:loading
+                >Create game</button
+            >
+        </form>
 
-    .game-configuration {
-        display: grid;
-        grid-template-columns: 50px 50px;
-    }
+        <div class="divider w-60 mx-auto my-8">OR</div>
 
-    .game-configuration > button,
-    .game-configuration > .radio,
-    .game-configuration > p {
-        grid-column: 1 / 3;
-    }
-
-    .game-configuration > p {
-        margin: 0;
-    }
-</style>
+        <GameList />
+    </div>
+</div>

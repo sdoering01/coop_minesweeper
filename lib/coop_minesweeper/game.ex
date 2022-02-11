@@ -16,7 +16,7 @@ defmodule CoopMinesweeper.Game do
     |> Stream.map(fn field ->
       %{player_count: get_game_player_count(field.id), field: field}
     end)
-    |> Stream.take(10)
+    |> Stream.take(12)
     |> Enum.to_list()
   end
 
