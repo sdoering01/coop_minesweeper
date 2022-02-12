@@ -52,10 +52,13 @@
     import MdArrowBack from 'svelte-icons/md/MdArrowBack.svelte';
     import MdPerson from 'svelte-icons/md/MdPerson.svelte';
     import MdRemoveRedEye from 'svelte-icons/md/MdRemoveRedEye.svelte';
+    import MdShare from 'svelte-icons/md/MdShare.svelte';
+    import MdCheck from 'svelte-icons/md/MdCheck.svelte';
 
     import { socket } from '$lib/socket';
     import type { Changes } from '$lib/Field';
     import FieldCanvas from '$components/FieldCanvas.svelte';
+    import toasts, { ToastType } from '$lib/stores/toast-store';
 
     export let gameId: string;
     export let fieldInfo: FieldInfo;
@@ -68,6 +71,8 @@
     let spectators = 0;
     let joined = false;
     let joinDialogOpen = true;
+    let shareEffectActive = false;
+    let shareEffectTimeout: NodeJS.Timeout;
 
     let paintChanges: (changes: Changes) => void;
     let repaint: () => void;
@@ -148,6 +153,19 @@
             channel.push('game:play_again', {}).receive('error', ({ reason }) => {
                 console.log(`Could not play again: ${reason}`);
             });
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            shareEffectActive = true;
+            clearTimeout(shareEffectTimeout);
+            shareEffectTimeout = setTimeout(() => {
+                shareEffectActive = false;
+            }, 2000);
+        } catch (ex) {
+            toasts.show('Could not copy link', ToastType.ERROR);
         }
     };
 </script>
@@ -235,7 +253,37 @@
             {/if}
         </div>
         <div class="game-info bg-neutral card p-4">
-            <h3 class="text-xl mb-1">Game {gameId}</h3>
+            <div class="flex justify-between items-center mb-1">
+                <h3 class="text-xl">Game {gameId}</h3>
+                <button
+                    on:click={handleShare}
+                    title="Share game link"
+                    class="relative btn btn-sm btn-square"
+                    class:btn-ghost={!shareEffectActive}
+                    class:btn-success={shareEffectActive}
+                >
+                    {#if shareEffectActive}
+                        <span
+                            class="text-base-200 absolute w-max right-9 bg-success p-1 rounded-md before:absolute before:-right-3 before:top-[3px] before:border-8 before:border-transparent before:border-l-success"
+                        >
+                            Link copied
+                        </span>
+                    {/if}
+                    <span class="w-full h-full overflow-hidden relative">
+                        {#if shareEffectActive}
+                            <span
+                                class="absolute inset-1"
+                                transition:fly|local={{ duration: 300, y: 20 }}><MdCheck /></span
+                            >
+                        {:else}
+                            <span
+                                class="absolute inset-1"
+                                transition:fly|local={{ duration: 300, y: -20 }}><MdShare /></span
+                            >
+                        {/if}
+                    </span>
+                </button>
+            </div>
             {#if field}
                 <p>Size: {field.size} &bull; Mines: {field.mines}</p>
                 <p>Mines left: {field.minesLeft}</p>
@@ -289,7 +337,8 @@
 <style lang="postcss">
     .site-container {
         display: grid;
-        grid-template-areas: 'header'
+        grid-template-areas:
+            'header'
             'game-info'
             'field'
             'player-info';
