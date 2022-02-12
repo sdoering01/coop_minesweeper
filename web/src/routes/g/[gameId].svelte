@@ -174,14 +174,14 @@
     <meta property="og:url" content={$page.url.toString()} />
 </svelte:head>
 
-<div class="site-container max-w-[100rem] mx-auto p-4 h-screen gap-2">
+<div class="site-container max-w-[100rem] mx-auto p-2 gap-2 md:h-screen md:p-4">
     <header class="navbar bg-neutral text-neutral-content rounded-box">
-        <div class="navbar-start px-2 mx-2">
-            <a href="/" class="btn btn-ghost btn-sm"
+        <div class="navbar-start px-2">
+            <a href="/" class="btn btn-ghost btn-sm px-2"
                 ><span class="icon"><MdArrowBack /></span>Back to lobby</a
             >
         </div>
-        <div class="navbar-center px-2 mx-2">
+        <div class="navbar-center px-2 hidden sm:flex">
             <h2 class="text-xl font-semibold text-accent">CoopMinesweeper</h2>
         </div>
         <div class="navbar-end">
@@ -204,11 +204,11 @@
                         transition:fade|local={{ duration: 300 }}
                     >
                         <div
-                            class="card bg-neutral shadow-2xl bg-opacity-80 px-6 py-4"
+                            class="card bg-neutral shadow-2xl bg-opacity-80 px-6 py-4 w-72 sm:w-auto"
                             transition:fly|local={{ y: 15, duration: 300 }}
                         >
                             <form on:submit|preventDefault={handleJoin}>
-                                <p class="mb-4 text-xl text-center">
+                                <p class="mb-4 text-center sm:text-xl">
                                     Enter your name to participate
                                 </p>
                                 <div class="flex space-x-2">
@@ -218,7 +218,7 @@
                                         bind:value={name}
                                         use:autoFocus
                                         spellcheck="false"
-                                        class="input input-primary"
+                                        class="input input-primary min-w-0"
                                     />
                                     <button type="submit" class="btn btn-primary">Join</button>
                                 </div>
@@ -286,15 +286,14 @@
     {/if}
 </div>
 
-<style>
+<style lang="postcss">
     .site-container {
         display: grid;
-        grid-template-areas:
-            'header header'
-            'field game-info'
-            'field player-info';
-        grid-template-columns: auto 250px;
-        grid-template-rows: auto auto minmax(0, 1fr);
+        grid-template-areas: 'header'
+            'game-info'
+            'field'
+            'player-info';
+        grid-template-rows: auto auto fit-content(80vh) fit-content(50vh);
     }
 
     .site-container > header {
@@ -311,5 +310,16 @@
 
     .player-info {
         grid-area: player-info;
+    }
+
+    @media screen(md) {
+        .site-container {
+            grid-template-areas:
+                'header header'
+                'field game-info'
+                'field player-info';
+            grid-template-columns: auto 250px;
+            grid-template-rows: auto auto minmax(0, 1fr);
+        }
     }
 </style>
