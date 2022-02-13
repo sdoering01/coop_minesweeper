@@ -120,8 +120,8 @@
             });
 
             presence.onSync(() => {
-                const allUsers = presence.list((user_id, { metas: [{ name, joined }] }) => {
-                    return { userId: user_id, name, joined };
+                const allUsers = presence.list((userId, { metas: [{ name, joined }] }) => {
+                    return { userId, name, joined };
                 });
                 userList = allUsers
                     .filter(({ joined }) => joined)
