@@ -100,9 +100,21 @@
             {/if}
 
             <label for="field-size" class="label"><span class="label-text">Size</span></label>
-            <input id="field-size" type="number" class="input" bind:value={size} />
+            <input
+                id="field-size"
+                type="number"
+                class="input"
+                autocomplete="off"
+                bind:value={size}
+            />
             <label for="field-mines" class="label"><span class="label-text">Mines</span></label>
-            <input id="field-mines" type="number" class="input" bind:value={mines} />
+            <input
+                id="field-mines"
+                type="number"
+                class="input"
+                autocomplete="off"
+                bind:value={mines}
+            />
             <div class="form-control">
                 <label class="cursor-pointer label">
                     <span class="label-text"
@@ -126,3 +138,15 @@
         <GameList />
     </div>
 </div>
+
+<style>
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+        display: none;
+        margin: 0;
+    }
+
+    input[type='number'] {
+        -moz-appearance: textfield;
+    }
+</style>
