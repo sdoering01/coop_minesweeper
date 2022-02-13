@@ -9,12 +9,18 @@
     import { socket } from '$lib/socket';
     import GameList from '$components/GameList.svelte';
 
+    const presets = [
+        { name: 'Easy', size: 14, mines: 20 },
+        { name: 'Medium', size: 22, mines: 50 },
+        { name: 'Hard', size: 30, mines: 120 }
+    ];
+
     let channel: Channel;
     let connecting = true;
     let loading = true;
     let createError = '';
-    let size = 14;
-    let mines = 20;
+    let size = presets[0].size;
+    let mines = presets[0].mines;
     let privateGame = false;
 
     if (browser) {
@@ -115,6 +121,21 @@
                 autocomplete="off"
                 bind:value={mines}
             />
+            <p class="label"><span class="label-text">Preset</span></p>
+            <div class="btn-group">
+                {#each presets as preset}
+                    <button
+                        type="button"
+                        on:click={() => {
+                            size = preset.size;
+                            mines = preset.mines;
+                        }}
+                        class="flex-1 btn btn-sm btn-outline no-animation"
+                        class:btn-active={size === preset.size && mines === preset.mines}
+                        >{preset.name}</button
+                    >
+                {/each}
+            </div>
             <div class="form-control">
                 <label class="cursor-pointer label">
                     <span class="label-text"
