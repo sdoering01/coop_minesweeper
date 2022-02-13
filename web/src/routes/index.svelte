@@ -1,6 +1,7 @@
 <script lang="ts">
     import { browser } from '$app/env';
     import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
     import { onDestroy } from 'svelte';
     import type { Channel } from 'phoenix';
     import MdBlock from 'svelte-icons/md/MdBlock.svelte';
@@ -54,6 +55,19 @@
             });
     };
 </script>
+
+<svelte:head>
+    <title>CoopMinesweeper</title>
+    <meta property="og:title" content="CoopMinesweeper" />
+    <meta
+        property="og:description"
+        content="CoopMinesweeper is the place where you can play Minesweeper together with your friends"
+    />
+    <!-- TODO: Change image -->
+    <meta property="og:image" content={$page.url.origin + '/favicon.png'} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={$page.url.toString()} />
+</svelte:head>
 
 <div class="flex flex-col gap-8 px-4 max-w-[100rem] mx-auto min-h-screen xl:flex-row xl:px-16">
     <div
