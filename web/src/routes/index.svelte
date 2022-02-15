@@ -8,6 +8,7 @@
 
     import { socket } from '$lib/socket';
     import GameList from '$components/GameList.svelte';
+    import toasts, { ToastType } from '$lib/stores/toast-store'
 
     const presets = [
         { name: 'Easy', size: 14, mines: 20 },
@@ -28,15 +29,13 @@
         channel
             .join()
             .receive('ok', () => {
-                console.log('Joined lobby');
                 loading = false;
                 connecting = false;
             })
-            .receive('error', () => console.log('Could not join lobby'));
-
-        channel.onClose(() => {
-            console.log('Left lobby');
-        });
+            .receive('error', () => {
+                channel.leave()
+                toasts.show('Could not connect to the server. Please try again later.', ToastType.ERROR)
+            });
     }
 
     onDestroy(() => {
@@ -51,11 +50,9 @@
         channel
             .push('create_game', { size, mines, visibility })
             .receive('ok', ({ game_id: gameId }) => {
-                console.log('Created game with id', gameId);
                 goto(`/g/${gameId}`);
             })
-            .receive('error', ({ reason, message }) => {
-                console.log('Could not create game:', reason, message);
+            .receive('error', ({ message }) => {
                 createError = message;
                 loading = false;
             });

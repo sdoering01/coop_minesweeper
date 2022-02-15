@@ -3,6 +3,7 @@
     import type { Channel } from 'phoenix';
 
     import { Field, TileState, Changes, FieldState } from '$lib/Field';
+    import toasts, { ToastType } from '$lib/stores/toast-store';
 
     export let field: Field;
     export let tileSize = 30;
@@ -143,8 +144,8 @@
         const col = Math.floor(ev.offsetX / tileSize);
         const row = Math.floor(ev.offsetY / tileSize);
         if (field.isValidPosition(row, col) && field.tiles[row][col].state === TileState.HIDDEN) {
-            channel.push('tile:reveal', { row, col }).receive('error', ({ reason }) => {
-                console.log(`Could not reveal tile in row ${row} and col ${col}: ${reason}`);
+            channel.push('tile:reveal', { row, col }).receive('error', (_error) => {
+                // Potentially handle error in future
             });
         }
     };
@@ -157,8 +158,8 @@
             (field.tiles[row][col].state === TileState.HIDDEN ||
                 field.tiles[row][col].state === TileState.MARK)
         ) {
-            channel.push('tile:toggle', { row, col }).receive('error', ({ reason }) => {
-                console.log(`Could not toggle tile in row ${row} and col ${col}: ${reason}`);
+            channel.push('tile:toggle', { row, col }).receive('error', (_error) => {
+                // Potentially handle error in future
             });
         }
     };

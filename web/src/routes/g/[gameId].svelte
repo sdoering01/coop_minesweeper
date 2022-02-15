@@ -77,37 +77,29 @@
     let paintChanges: (changes: Changes) => void;
     let repaint: () => void;
 
-    if (browser) {
+    if (browser && fieldInfo) {
         onMount(() => {
             channel = socket.channel(`game:${gameId}`);
             presence = new Presence(channel);
             channel
                 .join()
                 .receive('ok', (payload) => {
-                    console.log('Joined game with id', gameId);
-                    console.log('join', payload.field);
                     field = new Field(payload.field);
                 })
                 .receive('error', (payload) => {
-                    console.log('Could not join game with id', gameId);
-                    // TODO: Show error with toast
+                    let error = 'An unexpected error occured';
                     if (payload.reason === 'does_not_exist') {
-                        console.log('A game with that id does not exist');
-                    } else {
-                        console.log('An unexpected error occured');
+                        error = 'A game with that id does not exist';
                     }
+                    toasts.show(error, ToastType.ERROR)
                     channel.leave();
                 });
 
-            channel.onClose(() => console.log('Left game with id', gameId));
-
             channel.on('field:update', (payload) => {
-                console.log('field:update', payload.field);
                 field = new Field(payload.field);
             });
 
             channel.on('field:changes', (payload) => {
-                console.log('field:changes', payload.field, payload.changes);
                 field.handleChanges(payload.field, payload.changes);
                 field = field;
                 paintChanges?.(payload.changes);
@@ -131,7 +123,6 @@
                         return 0;
                     });
                 spectators = allUsers.length - userList.length;
-                console.log('presence.onSync', allUsers);
             });
         });
 
@@ -151,7 +142,7 @@
     const handlePlayAgain = () => {
         if (field.state !== FieldState.RUNNING) {
             channel.push('game:play_again', {}).receive('error', ({ reason }) => {
-                console.log(`Could not play again: ${reason}`);
+                toasts.show(`Could not play again (${reason})`, ToastType.ERROR);
             });
         }
     };
