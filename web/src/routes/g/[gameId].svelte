@@ -3,9 +3,9 @@
 
     import { Field, FieldState } from '$lib/Field';
     import { backendUrl } from '$lib/config';
-    import { autoFocus } from '$lib/hooks/auto-focus';
 
     const NAME_STORAGE_KEY = 'coop_minesweeper_name';
+    const HIDE_HELP_STORAGE_KEY = 'coop_minesweeper_hide_help';
 
     interface FieldInfo {
         size: number;
@@ -54,11 +54,13 @@
     import MdRemoveRedEye from 'svelte-icons/md/MdRemoveRedEye.svelte';
     import MdShare from 'svelte-icons/md/MdShare.svelte';
     import MdCheck from 'svelte-icons/md/MdCheck.svelte';
+    import MdHelp from 'svelte-icons/md/MdHelp.svelte';
 
     import { socket } from '$lib/socket';
     import type { Changes } from '$lib/Field';
     import FieldCanvas from '$components/FieldCanvas.svelte';
     import toasts, { ToastType } from '$lib/stores/toast-store';
+    import { hideBodyOverflow } from '$lib/hooks/hide-body-overflow';
 
     export let gameId: string;
     export let fieldInfo: FieldInfo;
@@ -66,16 +68,29 @@
     let channel: Channel;
     let presence: Presence;
     let field: Field;
-    let name = browser ? localStorage.getItem(NAME_STORAGE_KEY) || '' : '';
+    let name = (browser && localStorage.getItem(NAME_STORAGE_KEY)) || '';
     let userList: User[] = [];
     let spectators = 0;
     let joined = false;
     let joinDialogOpen = true;
+    let dontShowHelpAgain =
+        browser && localStorage.getItem(HIDE_HELP_STORAGE_KEY)
+            ? JSON.parse(localStorage.getItem(HIDE_HELP_STORAGE_KEY))
+            : true;
+    // Show help when the user visits for the first time or explictly wants to
+    // see the help
+    let helpModalOpen =
+        (browser && !localStorage.getItem(HIDE_HELP_STORAGE_KEY)) || !dontShowHelpAgain;
     let shareEffectActive = false;
     let shareEffectTimeout: NodeJS.Timeout;
+    let nameInput: HTMLInputElement;
 
     let paintChanges: (changes: Changes) => void;
     let repaint: () => void;
+
+    $: if (nameInput && !helpModalOpen) {
+        nameInput.focus();
+    }
 
     if (browser && fieldInfo) {
         onMount(() => {
@@ -91,7 +106,7 @@
                     if (payload.reason === 'does_not_exist') {
                         error = 'A game with that id does not exist';
                     }
-                    toasts.show(error, ToastType.ERROR)
+                    toasts.show(error, ToastType.ERROR);
                     channel.leave();
                 });
 
@@ -159,6 +174,11 @@
             toasts.show('Could not copy link', ToastType.ERROR);
         }
     };
+
+    const handleHelpDialogClose = () => {
+        localStorage.setItem(HIDE_HELP_STORAGE_KEY, JSON.stringify(dontShowHelpAgain));
+        helpModalOpen = false;
+    };
 </script>
 
 <svelte:head>
@@ -183,6 +203,58 @@
     <meta property="og:url" content={$page.url.toString()} />
 </svelte:head>
 
+{#if helpModalOpen && fieldInfo}
+    <div
+        use:hideBodyOverflow
+        class="fixed inset-0 grid place-items-center bg-neutral-focus bg-opacity-60 z-50 xs:p-4"
+    >
+        <div
+            class="space-y-2 p-4 bg-base-100 w-full h-full max-h-full overflow-y-auto xs:p-6 xs:rounded-box xs:max-w-lg xs:h-auto"
+        >
+            <h3 class="text-xl font-semibold">Welcome to CoopMinesweeper</h3>
+            <p>
+                This game is a remake of the classic game Minesweeper. It consists of a grid with
+                tiles that can be either a mine or no mine.
+            </p>
+            <p>
+                The goal is to reveal all tiles that are no mines. You lose, when you reveal a mine.
+            </p>
+            <p>
+                When you reveal a tile which is no mine, it shows how many mines are in the eight
+                tiles around it.
+            </p>
+            <p>
+                If you think that know where a mine is, you can mark that tile to not accidentally
+                reveal the mine later and lose.
+            </p>
+            <p>
+                Additionally you can play this game with your friends. Just click the share symbol
+                and send them the link!
+            </p>
+            <h3 class="text-xl font-semibold pt-2">Controls</h3>
+            <p>
+                You can <b>reveal a tile</b> by left clicking (computer) or tapping (mobile) it.
+                <br />
+                You can <b>mark a tile</b> as a mine or remove the mark by right clicking (computer)
+                or long tapping (mobile) it.
+                <br />
+                When playing from a computer you can navigate a large field by dragging while holding
+                down the middle mouse button.
+            </p>
+            <div class="divider" />
+            <div>
+                <label class="cursor-pointer label p-0 mb-4">
+                    <span class="label-text">Don't show this again</span>
+                    <input type="checkbox" bind:checked={dontShowHelpAgain} class="checkbox" />
+                </label>
+                <button on:click={handleHelpDialogClose} class="btn btn-primary btn-block"
+                    >Close</button
+                >
+            </div>
+        </div>
+    </div>
+{/if}
+
 <div class="site-container max-w-[100rem] mx-auto p-2 gap-2 md:h-screen md:p-4">
     <header class="navbar bg-neutral text-neutral-content rounded-box">
         <div class="navbar-start px-2">
@@ -193,8 +265,17 @@
         <div class="navbar-center px-2 hidden sm:flex">
             <h2 class="text-xl font-semibold text-accent">CoopMinesweeper</h2>
         </div>
-        <div class="navbar-end">
+        <div class="navbar-end px-2">
             <!-- TODO: Settings will go here -->
+            {#if fieldInfo}
+                <button
+                    on:click={() => (helpModalOpen = true)}
+                    title="Help"
+                    class="btn btn-sm btn-square btn-ghost"
+                >
+                    <span class="icon m-0"><MdHelp /></span>
+                </button>
+            {/if}
         </div>
     </header>
     {#if !fieldInfo}
@@ -209,15 +290,15 @@
             {#if field}
                 {#if joinDialogOpen}
                     <div
-                        class="absolute inset-0 grid place-items-center backdrop-blur-sm bg-black bg-opacity-50"
+                        class="absolute inset-0 grid place-items-center backdrop-blur-sm bg-black bg-opacity-50 p-4"
                         transition:fade|local={{ duration: 300 }}
                     >
                         <div
-                            class="card bg-neutral shadow-2xl bg-opacity-80 px-6 py-4 w-72 sm:w-auto"
+                            class="card bg-neutral shadow-2xl bg-opacity-80 px-6 py-4 max-w-full max-h-full sm:max-w-md"
                             transition:fly|local={{ y: 15, duration: 300 }}
                         >
                             <form on:submit|preventDefault={handleJoin}>
-                                <p class="mb-4 text-center sm:text-xl">
+                                <p class="mb-4 text-center text-xl">
                                     Enter your name to participate
                                 </p>
                                 <div class="flex space-x-2">
@@ -225,7 +306,7 @@
                                         type="text"
                                         placeholder="Anonymous"
                                         bind:value={name}
-                                        use:autoFocus
+                                        bind:this={nameInput}
                                         spellcheck="false"
                                         class="input input-primary min-w-0"
                                     />
