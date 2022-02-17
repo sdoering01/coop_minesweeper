@@ -17,7 +17,7 @@ defmodule CoopMinesweeperWeb.Router do
   scope "/", CoopMinesweeperWeb do
     pipe_through :browser
 
-    get "/", PageController, :index
+    # get "/", PageController, :index
   end
 
   scope "/", CoopMinesweeperWeb do

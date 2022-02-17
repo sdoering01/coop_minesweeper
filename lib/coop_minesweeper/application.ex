@@ -8,8 +8,8 @@ defmodule CoopMinesweeper.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Start the Ecto repository
-      CoopMinesweeper.Repo,
+      # Start the Ecto repository (Not needed for now)
+      # CoopMinesweeper.Repo,
       # Start the Telemetry supervisor
       CoopMinesweeperWeb.Telemetry,
       # Start the PubSub system
