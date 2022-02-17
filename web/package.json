@@ -29,7 +29,7 @@
   "type": "module",
   "dependencies": {
     "daisyui": "^1.25.4",
-    "phoenix": "^1.6.6",
+    "phoenix": "github:sdoering01/phoenix#v1.6",
     "svelte-icons": "^2.1.0"
   }
 }
