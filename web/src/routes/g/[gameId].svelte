@@ -105,6 +105,10 @@
                     let error = 'An unexpected error occured';
                     if (payload.reason === 'does_not_exist') {
                         error = 'A game with that id does not exist';
+                        // Set fieldInfo to null so when the player opens a
+                        // cached version of a game that doesn't exist anymore
+                        // it correctly shows the error message.
+                        fieldInfo = null;
                     }
                     toasts.show(error, ToastType.ERROR);
                     channel.leave();
