@@ -10,12 +10,13 @@ defmodule CoopMinesweeper.Game do
     GameRegistry.list_game_pids()
     |> Stream.map(&Game.get_field/1)
     |> Stream.filter(fn
-      %Field{state: :running, visibility: :public} -> true
+      %Field{visibility: :public} -> true
       %Field{} -> false
     end)
     |> Stream.map(fn field ->
       %{player_count: get_game_player_count(field.id), field: field}
     end)
+    |> Stream.filter(fn %{player_count: player_count} -> player_count > 0 end)
     |> Stream.take(12)
     |> Enum.to_list()
   end
