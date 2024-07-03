@@ -85,6 +85,9 @@
     let shareEffectTimeout: NodeJS.Timeout;
     let nameInput: HTMLInputElement;
 
+    let gameTimerInterval: NodeJS.Timer;
+    let gameTimerSeconds: number = 0;
+
     let paintChanges: (changes: Changes) => void;
     let repaint: () => void;
 
@@ -100,6 +103,12 @@
                 .join()
                 .receive('ok', (payload) => {
                     field = new Field(payload.field);
+
+                    if (field.started_at != null && field.state === FieldState.RUNNING) {
+                        startGameTimer(field.gameSeconds());
+                    } else {
+                        gameTimerSeconds = field.gameSeconds();
+                    }
                 })
                 .receive('error', (payload) => {
                     let error = 'An unexpected error occured';
@@ -114,17 +123,25 @@
                     channel.leave();
                 });
 
-            channel.on('field:update', (payload) => {
-                field = new Field(payload.field);
-            });
-
             channel.on('field:changes', (payload) => {
+                const old_started_at = field.started_at;
+
                 field.handleChanges(payload.field, payload.changes);
+
+                if (old_started_at == null && field.started_at != null && field.state === FieldState.RUNNING) {
+                    startGameTimer(field.gameSeconds());
+                } else if (field.state === FieldState.WON || field.state === FieldState.LOST) {
+                    cancelGameTimer();
+                    gameTimerSeconds = field.gameSeconds();
+                }
+
                 field = field;
                 paintChanges?.(payload.changes);
             });
 
             channel.on('game:play_again', (payload) => {
+                gameTimerSeconds = 0;
+
                 field.playAgain(payload.field);
                 field = field;
                 repaint?.();
@@ -147,6 +164,7 @@
 
         onDestroy(() => {
             channel?.leave();
+            cancelGameTimer();
         });
     }
 
@@ -182,6 +200,20 @@
     const handleHelpDialogClose = () => {
         localStorage.setItem(HIDE_HELP_STORAGE_KEY, JSON.stringify(dontShowHelpAgain));
         helpModalOpen = false;
+    };
+
+    const startGameTimer = (initialSeconds: number) => {
+        cancelGameTimer();
+
+        gameTimerSeconds = initialSeconds;
+
+        gameTimerInterval = setInterval(() => {
+            gameTimerSeconds += 1;
+        }, 1000);
+    };
+
+    const cancelGameTimer = () => {
+        clearInterval(gameTimerInterval);
     };
 </script>
 
@@ -363,6 +395,9 @@
             {#if field}
                 <p>Size: {field.size} &bull; Mines: {field.mines}</p>
                 <p>Mines left: {field.minesLeft}</p>
+                <p>
+                    Time: {gameTimerSeconds} {gameTimerSeconds === 1 ? "second" : "seconds"}
+                </p>
                 <p>
                     {#if field.state === FieldState.RUNNING}
                         Game running

@@ -21,6 +21,8 @@ defmodule CoopMinesweeper.Game.Field do
     :state,
     :visibility,
     :last_interaction,
+    :started_at,
+    :finished_at,
     mines_initialized: false,
     recent_player: ""
   ]
@@ -39,6 +41,8 @@ defmodule CoopMinesweeper.Game.Field do
           state: state(),
           visibility: visibility(),
           last_interaction: DateTime.t(),
+          started_at: DateTime.t() | nil,
+          finished_at: DateTime.t() | nil,
           mines_initialized: boolean(),
           recent_player: String.t()
         }
@@ -84,7 +88,9 @@ defmodule CoopMinesweeper.Game.Field do
       mines_left: mines,
       state: :running,
       visibility: visibility,
-      last_interaction: DateTime.utc_now()
+      last_interaction: DateTime.utc_now(),
+      started_at: nil,
+      finished_at: nil
     }
 
     {:ok, field}
@@ -109,6 +115,7 @@ defmodule CoopMinesweeper.Game.Field do
     restricted_positions = get_surrounding_positions(field, pos)
     field = initialize_mines(field, restricted_positions)
     field = %{field | mines_initialized: true}
+    field = %{field | started_at: DateTime.utc_now()}
 
     make_turn(field, pos, player)
   end
@@ -123,6 +130,7 @@ defmodule CoopMinesweeper.Game.Field do
       if tiles[pos].mine? do
         {field, changes} = reveal_mines(field, :lost)
         field = %{field | state: :lost}
+        field = %{field | finished_at: DateTime.utc_now()}
         {:ok, {field, changes}}
       else
         {field, changes} = reveal_tile(field, pos)
@@ -132,6 +140,7 @@ defmodule CoopMinesweeper.Game.Field do
           changes = Map.merge(changes, reveal_changes)
           field = %{field | mines_left: 0}
           field = %{field | state: :won}
+          field = %{field | finished_at: DateTime.utc_now()}
           {:ok, {field, changes}}
         else
           {:ok, {field, changes}}

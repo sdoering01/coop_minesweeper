@@ -24,7 +24,13 @@ defmodule CoopMinesweeperWeb.FieldView do
   end
 
   def render("field_changes.json", %{
-        field: %Field{mines_left: mines_left, state: state, recent_player: recent_player},
+        field: %Field{
+          mines_left: mines_left,
+          state: state,
+          recent_player: recent_player,
+          started_at: started_at,
+          finished_at: finished_at
+        },
         changes: changes
       }) do
     %{
@@ -35,6 +41,8 @@ defmodule CoopMinesweeperWeb.FieldView do
       field: %{
         mines_left: mines_left,
         state: state,
+        started_at: started_at,
+        finished_at: finished_at,
         recent_player: recent_player
       }
     }
@@ -46,6 +54,8 @@ defmodule CoopMinesweeperWeb.FieldView do
           mines: mines,
           mines_left: mines_left,
           state: state,
+          started_at: started_at,
+          finished_at: finished_at,
           recent_player: recent_player
         }
       }) do
@@ -54,6 +64,8 @@ defmodule CoopMinesweeperWeb.FieldView do
       mines: mines,
       mines_left: mines_left,
       state: state,
+      started_at: started_at,
+      finished_at: finished_at,
       recent_player: recent_player
     }
   end
@@ -61,7 +73,9 @@ defmodule CoopMinesweeperWeb.FieldView do
   def render("field_list.json", %{
         field_list: field_list
       }) do
-    render_many(field_list, CoopMinesweeperWeb.FieldView, "field_list_entry.json", as: :list_entry)
+    render_many(field_list, CoopMinesweeperWeb.FieldView, "field_list_entry.json",
+      as: :list_entry
+    )
   end
 
   def render("field_list_entry.json", %{

@@ -12,6 +12,8 @@ interface UnparsedField {
     mines_left: number;
     tiles: UnparsedTile[][];
     state: UnparsedFieldState;
+    started_at: null | string;
+    finished_at: null | string;
     recent_player: string;
 }
 
@@ -42,14 +44,18 @@ export class Field {
     public minesLeft: number;
     public tiles: Tile[][];
     public state: FieldState;
+    public started_at: Date | null;
+    public finished_at: Date | null;
     public recentPlayer: string;
 
-    constructor({ mines, size, mines_left, tiles, state, recent_player }: UnparsedField) {
+    constructor({ mines, size, mines_left, tiles, state, recent_player, started_at, finished_at }: UnparsedField) {
         this.mines = mines;
         this.size = size;
         this.minesLeft = mines_left;
         this.tiles = tiles.map((row) => row.map((tile) => this.parseTile(tile)));
         this.state = this.parseFieldState(state);
+        this.started_at = started_at && new Date(started_at);
+        this.finished_at = finished_at && new Date(finished_at);
         this.recentPlayer = recent_player;
     }
 
@@ -57,12 +63,16 @@ export class Field {
         {
             mines_left,
             state,
-            recent_player
-        }: Pick<UnparsedField, 'mines_left' | 'state' | 'recent_player'>,
+            started_at,
+            finished_at,
+            recent_player,
+        }: Pick<UnparsedField, 'mines_left' | 'state' | 'started_at' | 'finished_at' | 'recent_player'>,
         changes: Changes
     ): void {
         this.minesLeft = mines_left;
         this.state = this.parseFieldState(state);
+        this.started_at = started_at && new Date(started_at);
+        this.finished_at = finished_at && new Date(finished_at);
         this.recentPlayer = recent_player;
         for (const [[row, col], tile] of changes) {
             this.tiles[row][col] = this.parseTile(tile);
@@ -74,16 +84,32 @@ export class Field {
         size,
         mines_left,
         state,
+        started_at,
+        finished_at,
         recent_player
     }: Omit<UnparsedField, 'tiles'>) {
         this.mines = mines;
         this.size = size;
         this.minesLeft = mines_left;
         this.state = this.parseFieldState(state);
+        this.started_at = started_at && new Date(started_at);
+        this.finished_at = finished_at && new Date(finished_at);
         this.recentPlayer = recent_player;
         this.tiles = Array.from(Array(size), () =>
             Array.from(Array(size), () => ({ state: TileState.HIDDEN, minesClose: 0 }))
         );
+    }
+
+    public gameSeconds(): number {
+        if (this.started_at) {
+            if (this.finished_at) {
+                return Math.floor((this.finished_at.getTime() - this.started_at.getTime()) / 1000);
+            } else {
+                return Math.floor((Date.now() - this.started_at.getTime()) / 1000);
+            }
+        } else {
+            return 0;
+        }
     }
 
     public isValidPosition(row: number, col: number) {

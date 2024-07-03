@@ -73,7 +73,6 @@ defmodule CoopMinesweeperWeb.GameChannel do
       when is_integer(row) and is_integer(col) do
     case Game.make_turn(socket.assigns.game, {row, col}, socket.assigns.name) do
       {:ok, {new_field, changes}} ->
-        # broadcast_field(socket, new_field)
         broadcast_changes(socket, new_field, changes)
         {:noreply, socket}
 
@@ -86,7 +85,6 @@ defmodule CoopMinesweeperWeb.GameChannel do
       when is_integer(row) and is_integer(col) do
     case Game.toggle_mark(socket.assigns.game, {row, col}, socket.assigns.name) do
       {:ok, {new_field, changes}} ->
-        # broadcast_field(socket, new_field)
         broadcast_changes(socket, new_field, changes)
         {:noreply, socket}
 
@@ -112,12 +110,6 @@ defmodule CoopMinesweeperWeb.GameChannel do
     Logger.info(message: "Unexpected event", event: event, params: params)
     {:reply, {:error, %{reason: "unexpected_event", event: event}}, socket}
   end
-
-  # @spec broadcast_field(socket :: Socket.t(), new_field :: Field.t()) :: any
-  # defp broadcast_field(socket, new_field) do
-  #   field_json = FieldView.render("player_field.json", field: new_field)
-  #   broadcast(socket, "field:update", %{field: field_json})
-  # end
 
   @spec broadcast_changes(socket :: Socket.t(), field :: Field.t(), changes :: Field.tiles()) ::
           any
