@@ -99,24 +99,57 @@ defmodule CoopMinesweeper.Game.Game do
   @impl true
   def handle_call({:make_turn, pos, player}, _from, field) do
     case Field.make_turn(field, pos, player) do
-      {:ok, {updated_field, _changes}} = ret -> {:reply, ret, updated_field}
-      {:error, _} = err -> {:reply, err, field}
+      {:ok, {new_field, changes}} ->
+        broadcast_changes(new_field, changes)
+        {:reply, :ok, new_field}
+
+      {:error, _} = err ->
+        {:reply, err, field}
     end
   end
 
   @impl true
   def handle_call({:toggle_mark, pos, player}, _from, field) do
     case Field.toggle_mark(field, pos, player) do
-      {:ok, {updated_field, _changes}} = ret -> {:reply, ret, updated_field}
-      {:error, _} = err -> {:reply, err, field}
+      {:ok, {new_field, changes}} ->
+        broadcast_changes(new_field, changes)
+        {:reply, :ok, new_field}
+
+      {:error, _} = err ->
+        {:reply, err, field}
     end
   end
 
   @impl true
   def handle_call(:play_again, _from, field) do
     case Field.play_again(field) do
-      {:ok, updated_field} = ret -> {:reply, ret, updated_field}
-      {:error, _} = err -> {:reply, err, field}
+      {:ok, new_field} ->
+        broadcast_play_again(new_field)
+        {:reply, :ok, new_field}
+
+      {:error, _} = err ->
+        {:reply, err, field}
     end
+  end
+
+  defp broadcast_changes(new_field, changes) do
+    # Optimization potential (also goes for `broadcast_play_again`):
+    # - Don't send the whole new field, but only relevant parts (e.g. size)
+    # - "Render" the changes in such a form that only relevant information is
+    #   sent to subscribers (e.g. don't send `mine?` field of tiles in changes)
+
+    Phoenix.PubSub.broadcast(
+      CoopMinesweeper.PubSub,
+      "game:#{new_field.id}",
+      {:field_changes, {new_field, changes}}
+    )
+  end
+
+  defp broadcast_play_again(new_field) do
+    Phoenix.PubSub.broadcast(
+      CoopMinesweeper.PubSub,
+      "game:#{new_field.id}",
+      {:play_again, new_field}
+    )
   end
 end

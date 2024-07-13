@@ -50,6 +50,18 @@ defmodule CoopMinesweeperWeb.GameChannel do
     {:noreply, socket}
   end
 
+  def handle_info({:field_changes, {new_field, changes}}, socket) do
+    response = FieldView.render("field_changes.json", field: new_field, changes: changes)
+    push(socket, "field:changes", response)
+    {:noreply, socket}
+  end
+
+  def handle_info({:play_again, new_field}, socket) do
+    field_metadata = FieldView.render("field_metadata.json", field: new_field)
+    push(socket, "game:play_again", %{field: field_metadata})
+    {:noreply, socket}
+  end
+
   def handle_in("game:join", %{"name" => name}, socket) do
     name = String.trim(name)
     name = if String.length(name) > 0, do: name, else: @default_name
@@ -72,8 +84,7 @@ defmodule CoopMinesweeperWeb.GameChannel do
   def handle_in("tile:reveal", %{"row" => row, "col" => col}, socket)
       when is_integer(row) and is_integer(col) do
     case Game.make_turn(socket.assigns.game, {row, col}, socket.assigns.name) do
-      {:ok, {new_field, changes}} ->
-        broadcast_changes(socket, new_field, changes)
+      :ok ->
         {:noreply, socket}
 
       {:error, reason} ->
@@ -84,8 +95,7 @@ defmodule CoopMinesweeperWeb.GameChannel do
   def handle_in("tile:toggle", %{"row" => row, "col" => col}, socket)
       when is_integer(row) and is_integer(col) do
     case Game.toggle_mark(socket.assigns.game, {row, col}, socket.assigns.name) do
-      {:ok, {new_field, changes}} ->
-        broadcast_changes(socket, new_field, changes)
+      :ok ->
         {:noreply, socket}
 
       {:error, reason} ->
@@ -95,9 +105,7 @@ defmodule CoopMinesweeperWeb.GameChannel do
 
   def handle_in("game:play_again", _params, socket) do
     case Game.play_again(socket.assigns.game) do
-      {:ok, new_field} ->
-        field_metadata = FieldView.render("field_metadata.json", field: new_field)
-        broadcast(socket, "game:play_again", %{field: field_metadata})
+      :ok ->
         {:noreply, socket}
 
       {:error, reason} ->
@@ -109,12 +117,5 @@ defmodule CoopMinesweeperWeb.GameChannel do
   def handle_in(event, params, socket) do
     Logger.info(message: "Unexpected event", event: event, params: params)
     {:reply, {:error, %{reason: "unexpected_event", event: event}}, socket}
-  end
-
-  @spec broadcast_changes(socket :: Socket.t(), field :: Field.t(), changes :: Field.tiles()) ::
-          any
-  defp broadcast_changes(socket, field, changes) do
-    response = FieldView.render("field_changes.json", field: field, changes: changes)
-    broadcast(socket, "field:changes", response)
   end
 end
