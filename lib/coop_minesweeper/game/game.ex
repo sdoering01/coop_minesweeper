@@ -19,10 +19,12 @@ defmodule CoopMinesweeper.Game.Game do
   """
   @spec start_link(opts :: keyword()) :: GenServer.on_start() | Field.on_new_error()
   def start_link(opts) do
-    size = Keyword.fetch!(opts, :size)
-    mines = Keyword.fetch!(opts, :mines)
-    game_id = Keyword.fetch!(opts, :game_id)
-    visibility = Keyword.fetch!(opts, :visibility)
+    %{
+      size: size,
+      mines: mines,
+      game_id: game_id,
+      visibility: visibility
+    } = Keyword.fetch!(opts, :game_opts)
 
     with {:ok, field} <- Field.new(size, mines, game_id, visibility) do
       GenServer.start_link(__MODULE__, field, opts)

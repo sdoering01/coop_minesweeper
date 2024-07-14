@@ -24,11 +24,17 @@ defmodule CoopMinesweeper.Game.GameRegistry do
     game_id = generate_game_id()
     name = {:via, Registry, {CoopMinesweeper.GameRegistry, game_id}}
 
+    game_opts = %{
+      size: size,
+      mines: mines,
+      game_id: game_id,
+      visibility: visibility
+    }
+
     with {:ok, game_agent} <-
            DynamicSupervisor.start_child(
              CoopMinesweeper.GameSupervisor,
-             {Game,
-              size: size, mines: mines, game_id: game_id, name: name, visibility: visibility}
+             {Game, name: name, game_opts: game_opts}
            ) do
       {:ok, {game_id, game_agent}}
     end
