@@ -3,7 +3,7 @@ defmodule CoopMinesweeperWeb.GameController do
   alias CoopMinesweeper.Game.{GameRegistry, Game}
 
   def info(conn, %{"game_id" => game_id}) do
-    with {:ok, game} <- GameRegistry.get(game_id), field <- Game.get_field(game) do
+    with {:ok, game} <- GameRegistry.get_game(game_id), field <- Game.get_field(game) do
       conn
       |> put_view(CoopMinesweeperWeb.FieldView)
       |> render("field_metadata.json", field: field)

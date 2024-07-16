@@ -5,7 +5,7 @@ defmodule CoopMinesweeper.Game.Game do
   conditions occur, when multiple players interact with the same field.
   """
 
-  use GenServer, restart: :temporary
+  use GenServer
 
   alias CoopMinesweeper.Game.Field
   require Logger

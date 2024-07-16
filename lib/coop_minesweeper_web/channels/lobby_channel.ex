@@ -14,13 +14,14 @@ defmodule CoopMinesweeperWeb.LobbyChannel do
       )
       when is_number(size) and is_number(mines) and visibility in ~w[public private] do
     case GameRegistry.create(size, mines, String.to_existing_atom(visibility)) do
-      {:ok, {game_id, _}} ->
+      {:ok, game_id} ->
         {:reply, {:ok, %{game_id: game_id}}, socket}
 
       {:error, reason} ->
         Logger.error("Error when creating game: " <> inspect(reason))
         message = translate_create_game_error(reason)
-        {:reply, {:error, %{reason: reason, message: message}}, socket}
+        response = {:error, %{reason: inspect(reason), message: message}}
+        {:reply, response, socket}
     end
   end
 

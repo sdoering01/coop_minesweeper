@@ -1,15 +1,14 @@
 defmodule CoopMinesweeperWeb.GameChannel do
   use Phoenix.Channel
-  alias Phoenix.Socket
   require Logger
-  alias CoopMinesweeper.Game.{GameRegistry, Game, Field}
+  alias CoopMinesweeper.Game.{GameRegistry, Game}
   alias CoopMinesweeperWeb.FieldView
   alias CoopMinesweeperWeb.Presence
 
   @default_name "Anonymous"
 
   def join("game:" <> game_id, _params, socket) do
-    case GameRegistry.get(game_id) do
+    case GameRegistry.get_game(game_id) do
       {:ok, game} ->
         field_json = FieldView.render("player_field.json", field: Game.get_field(game))
         user_id = :rand.uniform(1_000_000_000)

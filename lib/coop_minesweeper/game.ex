@@ -7,7 +7,7 @@ defmodule CoopMinesweeper.Game do
   """
   @spec list_public_fields() :: [%{player_count: non_neg_integer(), field: Field.t()}]
   def list_public_fields() do
-    GameRegistry.list_game_pids()
+    GameRegistry.stream_game_pids()
     |> Stream.map(&Game.get_field/1)
     |> Stream.filter(fn
       %Field{visibility: :public} -> true

@@ -1,13 +1,11 @@
 defmodule CoopMinesweeper.Game.GameRegistry do
   @moduledoc """
-  This module is responsible for creating, saving and deleting supervised game
-  agents.
-
-  It makes sure that the game id is associated with its game agent and that the
-  game agents are supervised so that they can't crash the application.
+  This module is responsible for creating and managing the supervisors of game
+  instances. The game instance itself is supervised by its game instance
+  supervisor, along with other things like the bot supervisor of each game.
   """
 
-  alias CoopMinesweeper.Game.{Game, Field}
+  alias CoopMinesweeper.Game.{GameInstanceSupervisor, Game, Field}
 
   @type not_found_error() :: {:error, :not_found_error}
 
@@ -19,10 +17,9 @@ defmodule CoopMinesweeper.Game.GameRegistry do
           mines :: non_neg_integer(),
           visibility :: Field.visibility()
         ) ::
-          {:ok, {String.t(), pid()}} | {:error, any()}
+          {:ok, String.t()} | {:error, any()}
   def create(size, mines, visibility) do
     game_id = generate_game_id()
-    name = {:via, Registry, {CoopMinesweeper.GameRegistry, game_id}}
 
     game_opts = %{
       size: size,
@@ -31,23 +28,37 @@ defmodule CoopMinesweeper.Game.GameRegistry do
       visibility: visibility
     }
 
-    with {:ok, game_agent} <-
-           DynamicSupervisor.start_child(
-             CoopMinesweeper.GameSupervisor,
-             {Game, name: name, game_opts: game_opts}
-           ) do
-      {:ok, {game_id, game_agent}}
+    name = {:via, Registry, {CoopMinesweeper.Game.GameRegistry, game_id}}
+
+    case DynamicSupervisor.start_child(
+           CoopMinesweeper.Game.GameSupervisor,
+           {GameInstanceSupervisor, name: name, game_opts: game_opts}
+         ) do
+      {:ok, _pid} ->
+        {:ok, game_id}
+
+      # For now it is easier to just try to start the Supervisor with the game,
+      # and catch the error that is returned by the Game process during
+      # startup.
+      {:error, {:shutdown, {:failed_to_start_child, Game, game_error}}} ->
+        {:error, game_error}
+
+      other_error ->
+        other_error
     end
   end
 
   @doc """
   Returns a game agent that is associated the given game id.
   """
-  @spec get(game_id :: String.t()) :: {:ok, pid()} | not_found_error()
-  def get(game_id) do
-    case Registry.lookup(CoopMinesweeper.GameRegistry, game_id) do
-      [] -> {:error, :not_found_error}
-      [{game_agent, _} | _] -> {:ok, game_agent}
+  @spec get_game(game_id :: String.t()) :: {:ok, pid()} | not_found_error()
+  def get_game(game_id) do
+    case Registry.lookup(CoopMinesweeper.Game.GameRegistry, game_id) do
+      [] ->
+        {:error, :not_found_error}
+
+      [{game_instance_supervisor, _} | _] ->
+        {:ok, GameInstanceSupervisor.get_game(game_instance_supervisor)}
     end
   end
 
@@ -56,17 +67,20 @@ defmodule CoopMinesweeper.Game.GameRegistry do
   """
   @spec delete(game_id :: String.t()) :: true | not_found_error()
   def delete(game_id) do
-    with {:ok, game_agent} <- get(game_id) do
+    with {:ok, game_agent} <- get_game(game_id) do
       # The Registry automatically deletes the PID and the DynamicSupervisor
       # can handle exits, so it is ok to just kill the game agent.
       Process.exit(game_agent, :kill)
     end
   end
 
-  @spec list_game_pids() :: [pid()]
-  def list_game_pids() do
+  @spec stream_game_pids() :: Stream.t()
+  def stream_game_pids() do
     select_pid = [{{:_, :"$1", :_}, [], [:"$1"]}]
-    Registry.select(CoopMinesweeper.GameRegistry, select_pid)
+
+    CoopMinesweeper.Game.GameRegistry
+    |> Registry.select(select_pid)
+    |> Stream.map(&CoopMinesweeper.Game.GameInstanceSupervisor.get_game/1)
   end
 
   @spec generate_game_id() :: String.t()
