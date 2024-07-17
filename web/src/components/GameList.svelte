@@ -46,6 +46,7 @@
                 minesLeft: mines_left,
                 playerCount: player_count
             }));
+            loadError = '';
         } else {
             loadError = 'An unexpected error occurred';
         }
