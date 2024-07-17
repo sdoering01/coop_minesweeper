@@ -49,11 +49,11 @@ defmodule CoopMinesweeper.Game.Field do
 
   @type on_new_error() :: {:error, :too_small | :too_large | :too_few_mines | :too_many_mines}
 
-  @type on_make_turn() ::
-          {:ok, {Field.t(), tiles()}} | {:error, :out_of_field | :invalid_position | :not_running}
+  @type on_make_turn_error() :: {:error, :out_of_field | :invalid_position | :not_running}
+  @type on_make_turn() :: {:ok, {Field.t(), tiles()}} | on_make_turn_error()
 
-  @type on_toggle_mark() ::
-          {:ok, {Field.t(), tiles()}} | {:error, :out_of_field | :invalid_position | :not_running}
+  @type on_toggle_mark_error() :: {:error, :out_of_field | :invalid_position | :not_running}
+  @type on_toggle_mark() :: {:ok, {Field.t(), tiles()}} | on_toggle_mark_error()
 
   @type on_play_again() ::
           {:ok, Field.t()} | {:error, :still_running}

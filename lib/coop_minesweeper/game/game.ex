@@ -43,7 +43,7 @@ defmodule CoopMinesweeper.Game.Game do
   Makes a turn in the game.
   """
   @spec make_turn(game :: pid(), pos :: Field.position(), player :: String.t()) ::
-          Field.on_make_turn()
+          :ok | Field.on_make_turn_error()
   def make_turn(game, pos, player) do
     GenServer.call(game, {:make_turn, pos, player})
   end
@@ -52,7 +52,7 @@ defmodule CoopMinesweeper.Game.Game do
   Toggles a mark in the game.
   """
   @spec toggle_mark(game :: pid(), pos :: Field.position(), player :: String.t()) ::
-          Field.on_toggle_mark()
+          :ok | Field.on_toggle_mark_error()
   def toggle_mark(game, pos, player) do
     GenServer.call(game, {:toggle_mark, pos, player})
   end
