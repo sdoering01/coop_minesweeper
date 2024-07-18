@@ -60,7 +60,7 @@ defmodule CoopMinesweeper.Game.Game do
   @doc """
   Restarts a game that is over.
   """
-  @spec play_again(game :: pid()) :: Field.on_play_again()
+  @spec play_again(game :: pid()) :: :ok | Field.on_play_again_error()
   def play_again(game) do
     GenServer.call(game, :play_again)
   end

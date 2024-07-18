@@ -55,8 +55,8 @@ defmodule CoopMinesweeper.Game.Field do
   @type on_toggle_mark_error() :: {:error, :out_of_field | :invalid_position | :not_running}
   @type on_toggle_mark() :: {:ok, {Field.t(), tiles()}} | on_toggle_mark_error()
 
-  @type on_play_again() ::
-          {:ok, Field.t()} | {:error, :still_running}
+  @type on_play_again_error() :: {:error, :still_running}
+  @type on_play_again() :: {:ok, Field.t()} | on_play_again_error()
 
   @doc """
   Generates a new field.
