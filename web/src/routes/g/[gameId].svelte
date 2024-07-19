@@ -241,7 +241,7 @@
         <meta property="og:title" content="CoopMinesweeper &bull; Game {gameId}" />
         <meta
             property="og:description"
-            content="CoopMinesweeper &bull; Game {fieldInfo.state} &bull; Size: {fieldInfo.size} &bull; Mines: {fieldInfo.mines} &bull; Mines left: {fieldInfo.minesLeft}"
+            content="CoopMinesweeper &bull; Size: {fieldInfo.size} &bull; Mines: {fieldInfo.mines}"
         />
     {:else}
         <title>CoopMinesweeper &bull; Game not found</title>
