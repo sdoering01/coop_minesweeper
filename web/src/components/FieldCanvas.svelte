@@ -36,26 +36,28 @@
     $: interactive = joined && field.state === FieldState.RUNNING;
 
     export const paintChanges = (changes: Changes) => {
-        const start = Date.now();
+        const start = performance.now();
         changes.forEach(([[row, col], _]) => {
             repaintTile(row, col);
             if (hovering && hoverRow === row && hoverCol === col) {
                 hovering = false;
             }
         });
-        console.log(`Paint changes took ${Date.now() - start}ms`);
+        const end = performance.now();
+        console.log(`Paint changes took ${end - start}ms`);
     };
 
     export const repaint = () => {
         if (context) {
-            const start = Date.now();
+            const start = performance.now();
             context.fillStyle = 'black';
             for (let row = 0; row < field.size; row++) {
                 for (let col = 0; col < field.size; col++) {
                     repaintTile(row, col);
                 }
             }
-            console.log(`Repaint took ${Date.now() - start}ms`);
+            const end = performance.now();
+            console.log(`Repaint took ${end - start}ms`);
         }
     };
 
