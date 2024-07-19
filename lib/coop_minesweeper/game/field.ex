@@ -243,6 +243,13 @@ defmodule CoopMinesweeper.Game.Field do
     {:ok, field}
   end
 
+  @spec apply_tile_changes(field :: Field.t(), tile_changes :: tiles()) :: Field.t()
+  def apply_tile_changes(field, tile_changes) do
+    Enum.reduce(tile_changes, field, fn {pos, tile}, field ->
+      put_in(field.tiles[pos], tile)
+    end)
+  end
+
   @doc """
   Returns a string representation of the field that can be shown to the player.
   """

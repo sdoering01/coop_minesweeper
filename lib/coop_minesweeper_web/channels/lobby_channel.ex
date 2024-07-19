@@ -13,7 +13,7 @@ defmodule CoopMinesweeperWeb.LobbyChannel do
         socket
       )
       when is_number(size) and is_number(mines) and visibility in ~w[public private] do
-    case GameRegistry.create(size, mines, String.to_existing_atom(visibility)) do
+    case GameRegistry.create_game(size, mines, String.to_existing_atom(visibility)) do
       {:ok, game_id} ->
         {:reply, {:ok, %{game_id: game_id}}, socket}
 

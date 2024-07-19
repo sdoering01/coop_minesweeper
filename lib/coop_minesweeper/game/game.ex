@@ -5,7 +5,7 @@ defmodule CoopMinesweeper.Game.Game do
   conditions occur, when multiple players interact with the same field.
   """
 
-  use GenServer
+  use GenServer, significant: true, restart: :temporary
 
   alias CoopMinesweeper.Game.Field
   require Logger
@@ -139,6 +139,12 @@ defmodule CoopMinesweeper.Game.Game do
     # - Don't send the whole new field, but only relevant parts (e.g. size)
     # - "Render" the changes in such a form that only relevant information is
     #   sent to subscribers (e.g. don't send `mine?` field of tiles in changes)
+
+    # Not sending the tiles results in way less copying of data between
+    # processes. This results in way lower CPU usage, especially when many
+    # player/bots play at the same time.
+    # TODO: Send the changes in a nicer way (e.g. own GameInfo struct).
+    new_field = %{new_field | tiles: %{}}
 
     Phoenix.PubSub.broadcast(
       CoopMinesweeper.PubSub,

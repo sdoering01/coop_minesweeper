@@ -18,6 +18,7 @@
         userId: string;
         name: string;
         joined: boolean;
+        isBot: boolean | undefined;
     }
 
     export const load: Load = async ({ fetch, params: { gameId } }) => {
@@ -70,6 +71,8 @@
     let field: Field;
     let name = (browser && localStorage.getItem(NAME_STORAGE_KEY)) || '';
     let userList: User[] = [];
+    let realPlayers = 0;
+    let bots = 0;
     let spectators = 0;
     let joined = false;
     let joinDialogOpen = true;
@@ -148,8 +151,8 @@
             });
 
             presence.onSync(() => {
-                const allUsers = presence.list((userId, { metas: [{ name, joined }] }) => {
-                    return { userId, name, joined };
+                const allUsers = presence.list((userId, { metas: [{ name, joined, "bot?": isBot }] }) => {
+                    return { userId, name, joined, isBot };
                 });
                 userList = allUsers
                     .filter(({ joined }) => joined)
@@ -158,6 +161,17 @@
                         if (u1.name > u2.name) return 1;
                         return 0;
                     });
+
+                realPlayers = 0;
+                bots = 0;
+                for (const user of userList) {
+                    if (user.isBot) {
+                        bots += 1;
+                    } else {
+                        realPlayers += 1;
+                    }
+                }
+
                 spectators = allUsers.length - userList.length;
             });
         });
@@ -175,6 +189,10 @@
             joinDialogOpen = false;
         });
     };
+
+    const handleAddBot = () => {
+        channel.push('bot:add', {});
+    }
 
     const handlePlayAgain = () => {
         if (field.state !== FieldState.RUNNING) {
@@ -429,17 +447,20 @@
             {#if field}
                 <div class="flex justify-between align-center mb-4">
                     <div class="flex items-center">
-                        <span class="icon"><MdPerson /></span>Players ({userList.length})
+                        <span class="icon"><MdPerson /></span>Players ({realPlayers} + {bots})
                     </div>
                     <div class="flex items-center">
                         <span class="icon"><MdRemoveRedEye /></span>{spectators}
                     </div>
                 </div>
-                <ul class="overflow-y-auto space-y-1">
-                    {#each userList as { userId, name } (userId)}
-                        <li transition:fade|local class="truncate max-w-full">{name}</li>
-                    {/each}
-                </ul>
+                <div class="overflow-y-auto space-y-2">
+                    <ul class="space-y-1">
+                        {#each userList as { userId, name, isBot } (userId)}
+                            <li transition:fade|local class="truncate max-w-full">{#if isBot}<i>Bot</i>{/if} {name}</li>
+                        {/each}
+                    </ul>
+                    <button class="btn btn-primary btn-sm w-full" on:click={handleAddBot}>Add Bot</button>
+                </div>
             {/if}
         </div>
     {/if}

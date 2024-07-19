@@ -1,7 +1,7 @@
 defmodule CoopMinesweeperWeb.GameChannel do
   use Phoenix.Channel
   require Logger
-  alias CoopMinesweeper.Game.{GameRegistry, Game}
+  alias CoopMinesweeper.Game.{GameRegistry, Game, GameInstanceSupervisor}
   alias CoopMinesweeperWeb.FieldView
   alias CoopMinesweeperWeb.Presence
 
@@ -16,6 +16,7 @@ defmodule CoopMinesweeperWeb.GameChannel do
         socket =
           socket
           |> assign(:game, game)
+          |> assign(:game_id, game_id)
           |> assign(:user_id, user_id)
           |> assign(:joined, false)
 
@@ -72,6 +73,15 @@ defmodule CoopMinesweeperWeb.GameChannel do
 
     send(self(), :after_game_join)
     {:reply, :ok, socket}
+  end
+
+  def handle_in("bot:add", %{}, socket) do
+    game_id = socket.assigns.game_id
+
+    {:ok, game_instance_supervisor} = GameRegistry.get_supervisor(game_id)
+    GameInstanceSupervisor.add_bot(game_instance_supervisor, game_id)
+
+    {:noreply, socket}
   end
 
   def handle_in(_event, _params, %{assigns: %{joined: false}} = socket) do

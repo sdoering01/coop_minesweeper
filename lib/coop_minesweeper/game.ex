@@ -30,6 +30,12 @@ defmodule CoopMinesweeper.Game do
 
     topic
     |> Presence.list()
-    |> map_size()
+    |> Map.values()
+    |> Enum.map(fn %{metas: [meta | _]} -> meta end)
+    |> Enum.filter(fn meta ->
+      bot? = Map.get(meta, :bot?, false)
+      meta.joined && !bot?
+    end)
+    |> Enum.count()
   end
 end

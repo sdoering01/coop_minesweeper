@@ -10,15 +10,16 @@ defmodule CoopMinesweeper.Game.GameRegistry do
   @type not_found_error() :: {:error, :not_found_error}
 
   @doc """
-  Creates a new game agent, supervises it and puts it into the registry.
+  Creates all processes related to a game, supervises them and puts that
+  supervisor into the registry.
   """
-  @spec create(
+  @spec create_game(
           size :: non_neg_integer(),
           mines :: non_neg_integer(),
           visibility :: Field.visibility()
         ) ::
           {:ok, String.t()} | {:error, any()}
-  def create(size, mines, visibility) do
+  def create_game(size, mines, visibility) do
     game_id = generate_game_id()
 
     game_opts = %{
@@ -37,7 +38,7 @@ defmodule CoopMinesweeper.Game.GameRegistry do
       {:ok, _pid} ->
         {:ok, game_id}
 
-      # For now it is easier to just try to start the Supervisor with the game,
+      # For now it is easier to just try to start the Supervisor With the game,
       # and catch the error that is returned by the Game process during
       # startup.
       {:error, {:shutdown, {:failed_to_start_child, Game, game_error}}} ->
@@ -49,28 +50,36 @@ defmodule CoopMinesweeper.Game.GameRegistry do
   end
 
   @doc """
-  Returns a game agent that is associated the given game id.
+  Returns the game process that is associated With the given game id.
   """
-  @spec get_game(game_id :: String.t()) :: {:ok, pid()} | not_found_error()
-  def get_game(game_id) do
+  @spec get_supervisor(game_id :: String.t()) :: {:ok, pid()} | not_found_error()
+  def get_supervisor(game_id) do
     case Registry.lookup(CoopMinesweeper.Game.GameRegistry, game_id) do
       [] ->
         {:error, :not_found_error}
 
-      [{game_instance_supervisor, _} | _] ->
-        {:ok, GameInstanceSupervisor.get_game(game_instance_supervisor)}
+      [{supervisor, _}] ->
+        {:ok, supervisor}
     end
   end
 
   @doc """
-  Deletes a game agent by its game id.
+  Returns the game process that is associated With the given game id.
+  """
+  @spec get_game(game_id :: String.t()) :: {:ok, pid()} | not_found_error()
+  def get_game(game_id) do
+    with {:ok, game_instance_supervisor} <- get_supervisor(game_id) do
+      {:ok, GameInstanceSupervisor.get_game(game_instance_supervisor)}
+    end
+  end
+
+  @doc """
+  Deletes a game process by its game id. This is done by killing its supervisor.
   """
   @spec delete(game_id :: String.t()) :: true | not_found_error()
   def delete(game_id) do
-    with {:ok, game_agent} <- get_game(game_id) do
-      # The Registry automatically deletes the PID and the DynamicSupervisor
-      # can handle exits, so it is ok to just kill the game agent.
-      Process.exit(game_agent, :kill)
+    with {:ok, game_instance_supervisor} <- get_supervisor(game_id) do
+      Process.exit(game_instance_supervisor, :shutdown)
     end
   end
 
