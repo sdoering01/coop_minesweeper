@@ -56,6 +56,7 @@
     import MdShare from 'svelte-icons/md/MdShare.svelte';
     import MdCheck from 'svelte-icons/md/MdCheck.svelte';
     import MdHelp from 'svelte-icons/md/MdHelp.svelte';
+    import MdRemove from 'svelte-icons/md/MdRemove.svelte';
 
     import { socket } from '$lib/socket';
     import type { Changes } from '$lib/Field';
@@ -192,6 +193,10 @@
 
     const handleAddBot = () => {
         channel.push('bot:add', {});
+    }
+
+    const handleRemoveBot = (botId: string) => {
+        channel.push('bot:remove', {bot_id: botId});
     }
 
     const handlePlayAgain = () => {
@@ -456,7 +461,14 @@
                 <div class="overflow-y-auto space-y-2">
                     <ul class="space-y-1">
                         {#each userList as { userId, name, isBot } (userId)}
-                            <li transition:fade|local class="truncate max-w-full">{#if isBot}<i>Bot</i>{/if} {name}</li>
+                            <li transition:fade|local class="truncate max-w-full flex items-center justify-between">
+                                <span>{#if isBot}<i>Bot </i>{/if}{name}</span>
+                                {#if isBot}
+                                    <button on:click={handleRemoveBot.bind(null, userId)} class="btn btn-xs btn-square" title="Remove">
+                                        <span class="icon m-0"><MdRemove /></span>
+                                    </button>
+                                {/if}
+                            </li>
                         {/each}
                     </ul>
                     <button class="btn btn-primary btn-sm w-full" on:click={handleAddBot}>Add Bot</button>

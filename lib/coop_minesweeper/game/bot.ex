@@ -15,15 +15,25 @@ defmodule CoopMinesweeper.Game.Bot do
     {:ok, game} = GameRegistry.get_game(game_id)
     field = Game.get_field(game)
 
+    bot_id = "bot:#{:rand.uniform(1_000_000_000)}"
     topic = "game:" <> game_id
     name = "Mineseeker"
+
     Phoenix.PubSub.subscribe(CoopMinesweeper.PubSub, topic)
-    track_presence(topic, name)
+    track_presence(topic, name, bot_id)
 
     schedule_turn()
 
-    state = %{name: name, game: game, field: field, turn_pos: {0, 0}}
+    state = %{id: bot_id, name: name, game: game, field: field, turn_pos: {0, 0}}
     {:ok, state}
+  end
+
+  def get_id(bot) do
+    GenServer.call(bot, :get_id)
+  end
+
+  def handle_call(:get_id, _from, state) do
+    {:reply, state.id, state}
   end
 
   def handle_info(:make_turn, state) do
@@ -86,10 +96,8 @@ defmodule CoopMinesweeper.Game.Bot do
     Process.send_after(self(), :make_turn, @time_between_turns)
   end
 
-  defp track_presence(topic, name) do
-    random_key = "bot:#{:rand.uniform(1_000_000_000)}"
-
-    CoopMinesweeperWeb.Presence.track(self(), topic, random_key, %{
+  defp track_presence(topic, name, key) do
+    CoopMinesweeperWeb.Presence.track(self(), topic, key, %{
       name: name,
       joined: true,
       bot?: true

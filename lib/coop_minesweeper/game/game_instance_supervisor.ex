@@ -44,6 +44,22 @@ defmodule CoopMinesweeper.Game.GameInstanceSupervisor do
     )
   end
 
+  def remove_bot(supervisor, bot_id) do
+    bot_supervisor = get_bot_supervisor(supervisor)
+
+    # This could probably be optimized further, but suffices for now
+    DynamicSupervisor.which_children(bot_supervisor)
+    |> Enum.each(fn
+      {_, pid, :worker, _} when pid != :restarting ->
+        if CoopMinesweeper.Game.Bot.get_id(pid) == bot_id do
+          DynamicSupervisor.terminate_child(bot_supervisor, pid)
+        end
+
+      {_, _, _, _} ->
+        nil
+    end)
+  end
+
   defp get_child(supervisor, child_module) do
     {_id, pid, __type, _modules} =
       Supervisor.which_children(supervisor)
