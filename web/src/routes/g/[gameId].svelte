@@ -192,7 +192,9 @@
     };
 
     const handleAddBot = () => {
-        channel.push('bot:add', {});
+        channel.push('bot:add', {}).receive('error', ({ reason }) => {
+            toasts.show(`Could not add bot (${reason})`, ToastType.ERROR);
+        });
     }
 
     const handleRemoveBot = (botId: string) => {

@@ -6,6 +6,10 @@ defmodule CoopMinesweeper.Game.GameInstanceSupervisor do
 
   use Supervisor, restart: :transient
 
+  alias CoopMinesweeper.Game.BotSupervisor
+
+  @max_bots_per_game 3
+
   def start_link(opts) do
     game_opts = Keyword.fetch!(opts, :game_opts)
 
@@ -38,10 +42,17 @@ defmodule CoopMinesweeper.Game.GameInstanceSupervisor do
   def add_bot(supervisor, game_id) do
     bot_supervisor = get_bot_supervisor(supervisor)
 
-    DynamicSupervisor.start_child(
-      bot_supervisor,
-      {CoopMinesweeper.Game.Bot, game_id: game_id}
-    )
+    if BotSupervisor.count_bots(bot_supervisor) >= @max_bots_per_game do
+      {:error, :max_bots_reached}
+    else
+      {:ok, _pid} =
+        DynamicSupervisor.start_child(
+          bot_supervisor,
+          {CoopMinesweeper.Game.Bot, game_id: game_id}
+        )
+
+      :ok
+    end
   end
 
   def remove_bot(game_id, bot_id) do

@@ -79,9 +79,14 @@ defmodule CoopMinesweeperWeb.GameChannel do
     game_id = socket.assigns.game_id
 
     {:ok, game_instance_supervisor} = GameRegistry.get_supervisor(game_id)
-    GameInstanceSupervisor.add_bot(game_instance_supervisor, game_id)
 
-    {:noreply, socket}
+    case GameInstanceSupervisor.add_bot(game_instance_supervisor, game_id) do
+      :ok ->
+        {:noreply, socket}
+
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
+    end
   end
 
   def handle_in("bot:remove", %{"bot_id" => bot_id}, socket) do
