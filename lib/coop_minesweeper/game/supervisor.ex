@@ -13,7 +13,8 @@ defmodule CoopMinesweeper.Game.Supervisor do
   def init(_init_arg) do
     children = [
       CoopMinesweeper.Game.GameSupervisor,
-      {Registry, name: CoopMinesweeper.Game.GameRegistry, keys: :unique}
+      {Registry, name: CoopMinesweeper.Game.GameRegistry, keys: :unique},
+      {Registry, name: CoopMinesweeper.Game.BotRegistry, keys: :unique}
     ]
 
     Supervisor.init(children, strategy: :one_for_all)

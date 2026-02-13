@@ -87,8 +87,7 @@ defmodule CoopMinesweeperWeb.GameChannel do
   def handle_in("bot:remove", %{"bot_id" => bot_id}, socket) do
     game_id = socket.assigns.game_id
 
-    {:ok, game_instance_supervisor} = GameRegistry.get_supervisor(game_id)
-    GameInstanceSupervisor.remove_bot(game_instance_supervisor, bot_id)
+    GameInstanceSupervisor.remove_bot(game_id, bot_id)
 
     {:noreply, socket}
   end

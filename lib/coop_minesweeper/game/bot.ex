@@ -7,33 +7,34 @@ defmodule CoopMinesweeper.Game.Bot do
 
   def start_link(opts) do
     game_id = Keyword.fetch!(opts, :game_id)
+    bot_id = "bot:#{:rand.uniform(1_000_000_000)}"
+    registry_key = {game_id, bot_id}
 
-    GenServer.start_link(__MODULE__, game_id, opts)
+    opts =
+      Keyword.put_new(
+        opts,
+        :name,
+        {:via, Registry, {CoopMinesweeper.Game.BotRegistry, registry_key}}
+      )
+
+    params = %{bot_id: bot_id, game_id: game_id}
+    GenServer.start_link(__MODULE__, params, opts)
   end
 
-  def init(game_id) do
-    {:ok, game} = GameRegistry.get_game(game_id)
+  def init(params) do
+    {:ok, game} = GameRegistry.get_game(params.game_id)
     field = Game.get_field(game)
 
-    bot_id = "bot:#{:rand.uniform(1_000_000_000)}"
-    topic = "game:" <> game_id
+    topic = "game:" <> params.game_id
     name = "Mineseeker"
 
     Phoenix.PubSub.subscribe(CoopMinesweeper.PubSub, topic)
-    track_presence(topic, name, bot_id)
+    track_presence(topic, name, params.bot_id)
 
     schedule_turn()
 
-    state = %{id: bot_id, name: name, game: game, field: field, turn_pos: {0, 0}}
+    state = %{name: name, game: game, field: field, turn_pos: {0, 0}}
     {:ok, state}
-  end
-
-  def get_id(bot) do
-    GenServer.call(bot, :get_id)
-  end
-
-  def handle_call(:get_id, _from, state) do
-    {:reply, state.id, state}
   end
 
   def handle_info(:make_turn, state) do
