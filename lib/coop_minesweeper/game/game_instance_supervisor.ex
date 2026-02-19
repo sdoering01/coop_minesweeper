@@ -62,6 +62,20 @@ defmodule CoopMinesweeper.Game.GameInstanceSupervisor do
     end
   end
 
+  def remove_bot(supervisor, game_id) do
+    bot_supervisor = get_bot_supervisor(supervisor)
+    if DynamicSupervisor.count_children(bot_supervisor)[:active] > 0 do
+      bots = DynamicSupervisor.which_children(bot_supervisor)
+      DynamicSupervisor.terminate_child(bot_supervisor, Enum.at(Tuple.to_list(List.last(bots)), 1))
+    end
+  end
+
+  def remove_all_bots(supervisor, game_id) do
+    bot_supervisor = get_bot_supervisor(supervisor)
+    bots = DynamicSupervisor.which_children(bot_supervisor)
+    Enum.map(bots, fn val -> DynamicSupervisor.terminate_child(bot_supervisor, Enum.at(Tuple.to_list(val), 1)) end)
+  end
+
   defp get_child(supervisor, child_module) do
     {_id, pid, __type, _modules} =
       Supervisor.which_children(supervisor)

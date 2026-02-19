@@ -201,6 +201,14 @@
         channel.push('bot:remove', {bot_id: botId});
     }
 
+    const handleRemoveBot = () => {
+        channel.push('bot:remove', {});
+    }
+
+    const handleRemoveAllBots = () => {
+        channel.push('bot:removeAll', {});
+    }
+
     const handlePlayAgain = () => {
         if (field.state !== FieldState.RUNNING) {
             channel.push('game:play_again', {}).receive('error', ({ reason }) => {
@@ -474,6 +482,8 @@
                         {/each}
                     </ul>
                     <button class="btn btn-primary btn-sm w-full" on:click={handleAddBot}>Add Bot</button>
+                    <button class="btn btn-primary btn-sm w-full" on:click={handleRemoveBot}>Rmove Bot</button>
+                    <button class="btn btn-primary btn-sm w-full" on:click={handleRemoveAllBots}>Rmove All Bots</button>
                 </div>
             {/if}
         </div>
